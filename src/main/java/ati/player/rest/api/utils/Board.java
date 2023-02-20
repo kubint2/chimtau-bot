@@ -70,15 +70,26 @@ public class Board {
         if (!canPlaceShip(ship, row, col)) {
             return false;
         }
+		List<int[]> coordinates = new ArrayList<>();
         if (ship.isVertical()) {
+			coordinates.add(new int[]{row+1,col+1});
+			coordinates.add(new int[]{row+1,col+2});
+			coordinates.add(new int[]{row+1,col+3});
+			coordinates.add(new int[]{row+1,col+4});
+			coordinates.add(new int[]{row,col+2});
+
+        	
             for (int r = row; r < row + ship.getLength(); r++) {
                 grid[r][col] = ship.getType();
+    			coordinates.add(new int[]{r,col});
             }
         } else {
             for (int c = col; c < col + ship.getLength(); c++) {
                 grid[row][c] = ship.getType();
+                coordinates.add(new int[]{row,c});
             }
         }
+        ship.getShipData().setCoordinates(coordinates);
         ship.setPosition(row, col);
         return true;
     }
