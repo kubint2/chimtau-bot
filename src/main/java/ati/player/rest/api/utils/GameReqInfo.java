@@ -35,4 +35,8 @@ public class GameReqInfo {
 	public void setGamePlaceShipsRequest(GamePlaceShipsRequest gamePlaceShipsRequest) {
 		this.gamePlaceShipsRequest = gamePlaceShipsRequest;
 	}
+	
+	
+	
+	
 }

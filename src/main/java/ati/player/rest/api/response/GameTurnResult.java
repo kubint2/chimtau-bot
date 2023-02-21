@@ -2,16 +2,14 @@ package ati.player.rest.api.response;
 
 import java.util.List;
 
-import ati.player.rest.api.entity.Coordinate;
-
 public class GameTurnResult {
-    private List<Coordinate> coordinates;
+    private List<int[]> coordinates;
     
-    public List<Coordinate> getCoordinates() {
+    public List<int[]> getCoordinates() {
         return coordinates;
     }
     
-    public void setCoordinates(List<Coordinate> coordinates) {
+    public void setCoordinates(List<int[]> coordinates) {
         this.coordinates = coordinates;
     }
 }
