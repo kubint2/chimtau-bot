@@ -42,7 +42,7 @@ public class Game {
     	int shotTurn = 2;
     	List<int[]> coordinates = new ArrayList<>();
 
-    	List<Coordinate> shotsTurn = getshotsTurn();
+    	List<Coordinate> shotsTurn = getshotsTurn(shotTurn);
     	for (Coordinate coordinate : shotsTurn) {
     		coordinates.add(new int[]{coordinate.getX(),coordinate.getY()} );
 		}
@@ -53,14 +53,15 @@ public class Game {
     }
     
     
-    public List<Coordinate> getshotsTurn() {
+    public List<Coordinate> getshotsTurn(int shotTurn) {
     	List<Coordinate> shotsTurn = new ArrayList<>();
     	
     	if(hitList.size() == 0) {
     		// Random shot
+    		List<Coordinate> randomShots = getRandomShot(shotTurn);
     	} else if (hitList.size() == 1) {
     		// Shot neightBour previousHit
-
+    		List<Coordinate> neightBours = getNeightBours(hitList);
     	} else if (hitList.size() == 2) {
     		// Shot vertical or Not
             Coordinate first = hitList.get(0);
@@ -112,12 +113,55 @@ public class Game {
         		return neightBour3point;
         	} else {
         		// Shot neightBours hit list
+        		List<Coordinate> neightBours = getNeightBours(hitList);
         	}
     	}
     	return shotsTurn;
     }
     
-    public List<Coordinate> getNeightBourTypeA(List<Coordinate> hitList, boolean vertical) {
+    private List<Coordinate> getNeightBours(List<Coordinate> hitList) {
+    	List<Coordinate> result = new ArrayList<>();
+    	for (Coordinate coordinate : hitList) {
+    		int x = coordinate.getX();
+        	int y = coordinate.getY();
+        	
+        	List<Coordinate> potentialTargets = new ArrayList<>();
+        	potentialTargets.add(new Coordinate(x - 1, y));
+        	potentialTargets.add(new Coordinate(x + 1, y));
+        	potentialTargets.add(new Coordinate(x, y - 1));
+        	potentialTargets.add(new Coordinate(x, y + 1));
+        	
+        	for (Coordinate target : potentialTargets) {
+        		int posX = target.getX();
+        		int posY = target.getY();
+        		if ((posX >= 0 && posY <= boardWidth) 
+        			&& (posY >= 0 && posY <= boardHeight) 
+        			&& (board[posX][posY] != 0)) {
+        			result.add(target);
+        		}
+        	}
+    	}
+    	
+		return result;
+	}
+
+	private List<Coordinate> getRandomShot(int shortTurn) {
+    	List<Coordinate> result = new ArrayList<>();
+    	while (result.size() != shortTurn) {
+    		Random random = new Random();
+            int x = random.nextInt(boardWidth);
+            int y = random.nextInt(boardHeight);
+            if ((x + y) % 2 == 0 && board[x][y] != 0) {
+            	continue;
+            } else {
+            	Coordinate coordinate = new Coordinate(x, y);
+            	result.add(coordinate);
+            }
+    	}
+		return result;
+	}
+
+	public List<Coordinate> getNeightBourTypeA(List<Coordinate> hitList, boolean vertical) {
     	List<Coordinate> neightBourTypeA = new ArrayList<>();
     	Coordinate min;
     	Coordinate max;
