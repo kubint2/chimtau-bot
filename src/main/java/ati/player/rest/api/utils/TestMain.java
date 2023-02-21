@@ -31,7 +31,7 @@ public class TestMain {
 		}
 	}
 	
-	public static void main(String[] args) {
+	public static void main2(String[] args) {
 		List<Coordinate> hitList = new ArrayList<>();
 		hitList.add(new Coordinate(1, 1));
 		hitList.add(new Coordinate(1, 2));
@@ -65,6 +65,24 @@ public class TestMain {
         return fourth;
     }
 	
-
+    public static void removeCoordinates(List<Coordinate> hitCoordinateList, List<Coordinate> toRemoveList) {
+        hitCoordinateList.removeAll(toRemoveList);
+    }
 	
+	public static void main(String[] args) {
+    	
+    	List<Coordinate> hitCoordinateList = new ArrayList<>();
+    	hitCoordinateList.add(new Coordinate(1, 1));
+    	hitCoordinateList.add(new Coordinate(2, 2));
+    	
+//    	List<Coordinate> toRemoveList = new ArrayList<>();
+//    	toRemoveList.add(new Coordinate(1, 1));
+//    	
+		int x = 1;
+		int y = 3;
+		hitCoordinateList.remove(new Coordinate(x, y));
+    	
+    	System.out.println("size " + hitCoordinateList.size());
+    	
+    }
 }
