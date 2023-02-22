@@ -51,6 +51,12 @@ public class TestMain {
 			board.addShip(new Ship("CV"));
 			board.placeShipsRandomly();
 			board.print();
+			
+			for (Ship ship : board.getShips()) {
+				JsonUtil.objectToJson("... " + ship.coordinates);
+			}
+			
+			System.out.println();
 			Thread.sleep(2000);
 		}
 	}

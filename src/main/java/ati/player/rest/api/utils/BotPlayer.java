@@ -11,7 +11,6 @@ import java.util.Random;
 import java.util.Set;
 
 import org.apache.commons.collections.CollectionUtils;
-import org.omg.CORBA.exception_type;
 
 import ati.player.rest.api.entity.Coordinate;
 import ati.player.rest.api.request.ShipRequest;
@@ -147,11 +146,64 @@ public class BotPlayer {
 				// Check valid coordinateFourth
 				if (isValidForShot(coordinateFourth)) {
 					neightBour3point.add(coordinateFourth);
+				} else {
+					// shot 
+					neightBour3point = makeShotNeighbors(findSquareCorner(hitCoordinateList));
 				}
 			}
 
 			if (CollectionUtils.isNotEmpty(neightBour3point)) {
 				return neightBour3point;
+			} else {
+				// Shot neightBour previousHit
+				return makeShotNeighbors();
+			}
+		} else if (hitCoordinateList.size() == 4) {
+			Coordinate first = hitCoordinateList.get(0);
+			Coordinate second = hitCoordinateList.get(1);
+			Coordinate third = hitCoordinateList.get(2);
+			Coordinate four = hitCoordinateList.get(3);
+			List<Coordinate> neightBour4point = new ArrayList<>();
+			Coordinate remainPoin;
+
+			if (first.getY() == second.getY() && first.getY() == third.getY()&& four.getY() == four.getY()) {
+				vertical = true;
+				Coordinate minCoordinateRowY = hitCoordinateList.stream().min(Comparator.comparing(Coordinate::getY))
+						.orElseThrow(NoSuchElementException::new);
+				remainPoin = new Coordinate(minCoordinateRowY.getX() - 1, minCoordinateRowY.getY() + 1);
+				if (isValidForShot(remainPoin)) {
+					neightBour4point.add(remainPoin);
+				}
+			} else if (first.getX() == second.getX() && first.getX() == third.getX()&& four.getX() == four.getX()) {
+				vertical = false;
+				Coordinate minCoordinateColX = hitCoordinateList.stream().min(Comparator.comparing(Coordinate::getX))
+						.orElseThrow(NoSuchElementException::new);
+				remainPoin = new Coordinate(minCoordinateColX.getX()+1, minCoordinateColX.getY()-1);
+				if (isValidForShot(remainPoin)) {
+					neightBour4point.add(remainPoin);
+				}
+			} else {
+				List<Coordinate> listCoordinateInline = removeNonCollinearCoordinates(hitCoordinateList);
+				if ((listCoordinateInline.get(0).getX() == listCoordinateInline.get(1).getX())
+						&& (listCoordinateInline.get(0).getX() == listCoordinateInline.get(2).getX())) {
+					Coordinate maxCoordinateRowY = hitCoordinateList.stream().max(Comparator.comparing(Coordinate::getY))
+							.orElseThrow(NoSuchElementException::new);
+					remainPoin = new Coordinate(maxCoordinateRowY.getX(), maxCoordinateRowY.getY()+1);
+					if (isValidForShot(remainPoin)) {
+						neightBour4point.add(remainPoin);
+					}
+				} else {
+					Coordinate maxCoordinateColX = hitCoordinateList.stream().max(Comparator.comparing(Coordinate::getX))
+							.orElseThrow(NoSuchElementException::new);
+					remainPoin = new Coordinate(maxCoordinateColX.getX()+1, maxCoordinateColX.getY());
+					if (isValidForShot(remainPoin)) {
+						neightBour4point.add(remainPoin);
+					}
+				}
+			}
+
+			if (CollectionUtils.isNotEmpty(neightBour4point)) {
+				return neightBour4point;
 			} else {
 				// Shot neightBour previousHit
 				return makeShotNeighbors();
@@ -172,6 +224,25 @@ public class BotPlayer {
         } while (board[x][y] != 0) ;
 
         return new Coordinate(x, y);
+    }
+    
+    public List<Coordinate> makeShotNeighbors(Coordinate shot) {
+        Set<Coordinate> neighborCells = new HashSet<>();
+        int x = shot.getX();
+        int y = shot.getY();
+        neighborCells.add(new Coordinate(x-1, y));
+        neighborCells.add(new Coordinate(x+1, y));
+        neighborCells.add(new Coordinate(x, y-1));
+        neighborCells.add(new Coordinate(x, y+1));
+
+        // Tìm kiếm tất cả các ô hàng xóm chưa bị bắn
+        List<Coordinate> unshotNeighbors = new ArrayList<>();
+        for (Coordinate neighbor : neighborCells) {
+            if (this.isValidForShot(neighbor)) {
+                unshotNeighbors.add(neighbor);
+            }
+        }
+        return unshotNeighbors;
     }
     
     public List<Coordinate> makeShotNeighbors() {
@@ -268,5 +339,54 @@ public class BotPlayer {
         Coordinate fourth = new Coordinate(x4, y4);
         return fourth;
     }
+    
+    public static Coordinate findSquareCorner(List<Coordinate> coordinates) {
+        // Tính độ dài đường chéo chính của hình vuông
+        double diagonalLength = Math.sqrt(2) * getDistance(coordinates.get(0), coordinates.get(1));
+
+        // Tìm tọa độ của góc của hình vuông
+        Coordinate corner = coordinates.get(0);
+        for (Coordinate coordinate : coordinates) {
+            if (coordinate.getX() + coordinate.getY() > corner.getX() + corner.getY()) {
+                corner = coordinate;
+            }
+        }
+        return corner;
+    }
+    
+    public static double getDistance(Coordinate a, Coordinate b) {
+        int xDiff = b.getX() - a.getX();
+        int yDiff = b.getY() - a.getY();
+        return Math.sqrt(xDiff * xDiff + yDiff * yDiff);
+    }
+    
+    public List<Coordinate> removeNonCollinearCoordinates(List<Coordinate> fourCoordinate) {
+        if (fourCoordinate.size() < 4) {
+            return fourCoordinate;
+        }
+        List<Coordinate> coordinates =  new ArrayList(fourCoordinate);
+        Coordinate first = coordinates.get(0);
+        double slope = (double) (coordinates.get(1).getY() - first.getY()) / (double) (coordinates.get(1).getX() - first.getX());
+        
+        for (int i = 2; i < coordinates.size(); i++) {
+            Coordinate current = coordinates.get(i);
+            double currentSlope = (double) (current.getY() - first.getY()) / (double) (current.getX() - first.getX());
+            
+            if (currentSlope != slope) {
+                coordinates.remove(current);
+            }
+        }
+        
+        return coordinates;
+    }
+    
+//    public static void main(String[] args) {
+//        List<Coordinate> coordinates = List.of(
+//                new Coordinate(5, 4),
+//                new Coordinate(6, 4),
+//                new Coordinate(6, 3)
+//            );
+//        //System.out.println( JsonUtil.objectToJson(findSquareCorner(coordinates)));
+//    }
     
 }

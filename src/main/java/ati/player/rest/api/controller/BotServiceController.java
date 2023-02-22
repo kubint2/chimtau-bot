@@ -127,7 +127,10 @@ public class BotServiceController {
 			
 			board.getShips();
 			for (Ship ship : board.getShips()) {
-				shipDatas.add(ship.getShipData());
+				ShipData shipData = new ShipData();
+				shipData.setType(ship.typeDesc);
+				shipData.setCoordinates(ship.getCoordinates());
+				shipDatas.add(shipData);
 			}
 
 			response.setShips(shipDatas);

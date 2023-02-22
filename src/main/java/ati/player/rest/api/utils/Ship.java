@@ -1,5 +1,9 @@
 package ati.player.rest.api.utils;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import ati.player.rest.api.entity.Coordinate;
 import ati.player.rest.api.entity.ShipData;
 
 public class Ship {
@@ -8,11 +12,23 @@ public class Ship {
     private boolean isVertical;
     private int row;
     private int col;
+    public String typeDesc;
+    public List<Coordinate> coordinates = new ArrayList<>();
     
-	private ShipData shipData = new ShipData();
+//	private ShipData shipData = new ShipData();
 	
+    public List<int[]> getCoordinates() {
+    	List<int[]> result = new ArrayList<>();
+    	
+		for (Coordinate coordinate : coordinates) {
+			result.add(new int[] {coordinate.getX(),coordinate.getY()});
+		}
+    	return result;
+    }
+    
     public Ship(String typeDesc) {
-    	this.shipData.setType(typeDesc);;
+    	//this.shipData.setType(typeDesc);;
+    	this.typeDesc = typeDesc;
     	
 		switch (typeDesc) {
 		case "DD":
@@ -70,14 +86,14 @@ public class Ship {
 	public void setCol(int col) {
 		this.col = col;
 	}
-	public void setPosition (int row, int col) {
-		this.row = row;
-		this.col = col;
-	}
-    public ShipData getShipData() {
-		return shipData;
-	}
-	public void setShipData(ShipData shipData) {
-		this.shipData = shipData;
-	}
+//	public void setPosition (int row, int col) {
+//		this.row = row;
+//		this.col = col;
+//	}
+//    public ShipData getShipData() {
+//		return shipData;
+//	}
+//	public void setShipData(ShipData shipData) {
+//		this.shipData = shipData;
+//	}
 }
