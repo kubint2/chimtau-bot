@@ -15,7 +15,9 @@
 package ati.player.rest.api.controller;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -58,8 +60,11 @@ public class BotServiceController {
 	public static final String RESULT_HIT = "HIT";
 
 	public static final String RESULT_MISS = "MISS";
+	
+	public static final String BOT_ID = "chimtau";
 
-	private BotPlayer botPlayer;
+	private Map<String, BotPlayer> botPlayerMap = new HashMap<>();
+	
 	
 	@RequestMapping(value = "/test", method = RequestMethod.GET)
 	public String test() throws Exception {
@@ -74,7 +79,11 @@ public class BotServiceController {
 		logger.debug("print " + JsonUtil.objectToJson(gameInviteReq));
 		NotifyResult response = new NotifyResult();
 		try {
-			botPlayer = BotPlayer.initInstance(gameInviteReq.getBoardWidth(), gameInviteReq.getBoardHeight(), gameInviteReq.getShips());
+			BotPlayer botPlayer = new BotPlayer(gameInviteReq.getBoardWidth(), gameInviteReq.getBoardHeight(), gameInviteReq.getShips());
+			String sessionID = request.getHeader("X-SESSION-ID");
+			botPlayerMap.put(sessionID, botPlayer);
+			
+			// botPlayer.initInstance(gameInviteReq.getBoardWidth(), gameInviteReq.getBoardHeight(), gameInviteReq.getShips());
 			// set response
 			response.setSuccess(true);
 		} catch (Exception e) {
@@ -90,6 +99,9 @@ public class BotServiceController {
 			throws Exception {
 		GameStartResult response = new GameStartResult();
 		try {
+			String sessionID = request.getHeader("X-SESSION-ID");
+			BotPlayer botPlayer = botPlayerMap.get(sessionID);
+			
 			// botPlayer = ChimtauPlayer.getInstance();
 			botPlayer.player1 = gamePlaceShipsRequest.getPlayer1();
 			botPlayer.player2 = gamePlaceShipsRequest.getPlayer2();
@@ -127,6 +139,9 @@ public class BotServiceController {
 			throws Exception {
 		GameTurnResult response = new GameTurnResult();
 		try {
+			String sessionID = request.getHeader("X-SESSION-ID");
+			BotPlayer botPlayer = botPlayerMap.get(sessionID);
+			
 			botPlayer.maxShots = gameTurnReq.getMaxShots();
 
 			response.setCoordinates(botPlayer.getShotsTurnResult());
@@ -145,31 +160,36 @@ public class BotServiceController {
 		NotifyResult response = new NotifyResult();
 		try {
 			response.setSuccess(true);
+			String sessionID = request.getHeader("X-SESSION-ID");
+			BotPlayer botPlayer = botPlayerMap.get(sessionID);
 			
-			List<ShotData> shotResult = gameNotifyReq.getShots();
-			for (ShotData shotData : shotResult) {
-				int[] coordinate = shotData.getCoordinate();
-				int x = coordinate[0];
-				int y = coordinate[1];
-				if(shotData.getStatus().equalsIgnoreCase(RESULT_HIT)) {
-					botPlayer.hitCoordinateList.add(new Coordinate(x, y));
-					botPlayer.board[x][y]=2;
-				} else {
-					botPlayer.board[x][y]=1;
-				}
-			}
-			// incase sunk ship data or [ ]
-			if(CollectionUtils.isNotEmpty(gameNotifyReq.getSunkShips())) {
-				for (ShipData shipData : gameNotifyReq.getSunkShips()) {
-					if(botPlayer.shipMap.containsKey(shipData.getType())) {
-						Integer quanty = botPlayer.shipMap.get(shipData.getType()) - 1;
-						botPlayer.shipMap.put(shipData.getType(), quanty);
+			
+			if(gameNotifyReq.getPlayerId().equals(BOT_ID)) {
+				List<ShotData> shotResult = gameNotifyReq.getShots();
+				for (ShotData shotData : shotResult) {
+					int[] coordinate = shotData.getCoordinate();
+					int x = coordinate[0];
+					int y = coordinate[1];
+					if(shotData.getStatus().equalsIgnoreCase(RESULT_HIT)) {
+						botPlayer.hitCoordinateList.add(new Coordinate(x, y));
+						botPlayer.board[x][y]=2;
+					} else {
+						botPlayer.board[x][y]=1;
 					}
-					for (int[] coordinate : shipData.getCoordinates()) {
-						int x = coordinate[0];
-						int y = coordinate[1];
-						botPlayer.hitCoordinateList.remove(new Coordinate(x, y));
-						botPlayer.resetCalculator();
+				}
+				// incase sunk ship data or [ ]
+				if(CollectionUtils.isNotEmpty(gameNotifyReq.getSunkShips())) {
+					for (ShipData shipData : gameNotifyReq.getSunkShips()) {
+						if(botPlayer.shipMap.containsKey(shipData.getType())) {
+							Integer quanty = botPlayer.shipMap.get(shipData.getType()) - 1;
+							botPlayer.shipMap.put(shipData.getType(), quanty);
+						}
+						for (int[] coordinate : shipData.getCoordinates()) {
+							int x = coordinate[0];
+							int y = coordinate[1];
+							botPlayer.hitCoordinateList.remove(new Coordinate(x, y));
+							botPlayer.resetCalculator();
+						}
 					}
 				}
 			}
@@ -187,9 +207,12 @@ public class BotServiceController {
 		NotifyResult response = new NotifyResult();
 		try {
 			response.setSuccess(true);
+			
+			String sessionID = request.getHeader("X-SESSION-ID");
+			BotPlayer botPlayer = botPlayerMap.get(sessionID);
+
 			botPlayer.winner = gameOverReq.getWinner();
 			botPlayer.loser = gameOverReq.getLoser();
-			
 		} catch (Exception e) {
 			e.printStackTrace();
 			logger.error(e);
@@ -201,6 +224,9 @@ public class BotServiceController {
 	@RequestMapping(value = "/botPlayer", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<?> botPlayerStatus(HttpServletRequest request)
 			throws Exception {
+		String sessionID = request.getHeader("X-SESSION-ID");
+		BotPlayer botPlayer = botPlayerMap.get(sessionID);
+
 		return new ResponseEntity<BotPlayer>(botPlayer, HttpStatus.OK);
 	}
 	

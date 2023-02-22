@@ -17,16 +17,16 @@ public class Board {
         this.height = height;
         this.ships = new ArrayList<>();
         
-        this.grid = new char[height][width];
-        for (int i = 0; i < height; i++) {
+        this.grid = new char[width][height];
+        for (int i = 0; i < width; i++) {
             Arrays.fill(grid[i], '.');
         }
     }
 
     public void print() {
-        for (int i = 0; i < height; i++) {
-            for (int j = 0; j < width; j++) {
-                System.out.print(grid[i][j] + " ");
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                System.out.print(grid[x][y] + " ");
             }
             System.out.println();
         }
@@ -40,25 +40,25 @@ public class Board {
         return ships;
     }
     
-    public boolean canPlaceShip(Ship ship, int row, int col) {
-        if (row < 0 || col < 0 || row >= height || col >= width) {
+    public boolean canPlaceShip(Ship ship, int rowY, int colX) {
+        if (rowY < 0 || colX < 0 || rowY >= height || colX >= width) {
             return false;
         }
         if (ship.isVertical()) {
-            if (row + ship.getLength() > height) {
+            if (rowY + ship.getLength() > height) {
                 return false;
             }
-            for (int r = row; r < row + ship.getLength(); r++) {
-                if (grid[r][col] != '.') {
+            for (int r = rowY; r < rowY + ship.getLength(); r++) {
+                if (grid[colX][r] != '.') {
                     return false;
                 }
             }
         } else {
-            if (col + ship.getLength() > width) {
+            if (colX + ship.getLength() > width) {
                 return false;
             }
-            for (int c = col; c < col + ship.getLength(); c++) {
-                if (grid[row][c] != '.') {
+            for (int c = colX; c < colX + ship.getLength(); c++) {
+                if (grid[c][rowY] != '.') {
                     return false;
                 }
             }
@@ -66,52 +66,52 @@ public class Board {
         return true;
     }
 
-    public boolean placeShip(Ship ship, int row, int col) {
-        if (!canPlaceShip(ship, row, col)) {
+    public boolean placeShip(Ship ship, int rowY, int colX) {
+        if (!canPlaceShip(ship, rowY, colX)) {
             return false;
         }
 		List<int[]> coordinates = new ArrayList<>();
         if (ship.isVertical()) {
-			coordinates.add(new int[]{row+1,col+1});
-			coordinates.add(new int[]{row+1,col+2});
-			coordinates.add(new int[]{row+1,col+3});
-			coordinates.add(new int[]{row+1,col+4});
-			coordinates.add(new int[]{row,col+2});
+			coordinates.add(new int[]{colX+1,rowY+1});
+			coordinates.add(new int[]{colX+2,rowY+1});
+			coordinates.add(new int[]{colX+3,rowY+1});
+			coordinates.add(new int[]{colX+4,rowY+1});
+			coordinates.add(new int[]{colX+2,rowY+1});
 
         	
-            for (int r = row; r < row + ship.getLength(); r++) {
-                grid[r][col] = ship.getType();
-    			coordinates.add(new int[]{r,col});
+            for (int r = rowY; r < rowY + ship.getLength(); r++) {
+                grid[colX][r] = ship.getType();
+    			coordinates.add(new int[]{colX, r});
             }
         } else {
-            for (int c = col; c < col + ship.getLength(); c++) {
-                grid[row][c] = ship.getType();
-                coordinates.add(new int[]{row,c});
+            for (int c = colX; c < colX + ship.getLength(); c++) {
+                grid[c][rowY] = ship.getType();
+                coordinates.add(new int[]{c,rowY});
             }
         }
         ship.getShipData().setCoordinates(coordinates);
-        ship.setPosition(row, col);
+        ship.setPosition(colX, rowY);
         return true;
     }
 
 	public void placeShipsRandomly() {
 
 		Random rand = new Random();
-		int row;
-		int col;
+		int rowY;
+		int colX;
 		boolean vertical;
 		for (Ship ship : ships) {
 			boolean placed = false;
 			switch (ship.getType()) {
 			case 'A':
 				while (!placed) {
-					row = rand.nextInt(height);
-					col = rand.nextInt(width);
-					System.out.println("Type " + ship.getType() + "  {" + row + ", " + col + "}");
+					rowY = rand.nextInt(height);
+					colX = rand.nextInt(width);
+					System.out.println("Type " + ship.getType() + "  {" + colX + ", " + rowY + "}");
 					
 					vertical = rand.nextBoolean();
 					ship.setVertical(vertical);
-					if (placeShip(ship, row, col)) {
+					if (placeShip(ship, rowY, colX)) {
 						placed = true;
 					}
 				}
@@ -120,78 +120,78 @@ public class Board {
 				while (!placed) {
 					vertical = rand.nextBoolean();
 					if(vertical) {
-						row = rand.nextInt(height-4);
-						col = ThreadLocalRandom.current().nextInt(1, width-1);
-						System.out.println("Type " + ship.getType() + "  {" + row + ", " + col + "}");
+						rowY = rand.nextInt(height-4);
+						colX = ThreadLocalRandom.current().nextInt(1, width-1);
+						System.out.println("Type " + ship.getType() + "  {" + colX + ", " + rowY + "}");
 						
-						if (grid[row][col] == '.' && grid[row+1][col] == '.' && grid[row+2][col] == '.'
-								&& grid[row+3][col] == '.' && grid[row+1][col-1] == '.') {
+						if (grid[colX][rowY] == '.' && grid[colX][rowY+1] == '.' && grid[colX][rowY+2] == '.'
+								&& grid[colX][rowY+3] == '.' && grid[colX-1][rowY+1] == '.') {
 							placed = true;
 							// add coordinates
 							List<int[]> coordinates = new ArrayList<>();
-							coordinates.add(new int[]{row,col});
-							coordinates.add(new int[]{row+1,col});
-							coordinates.add(new int[]{row+2,col});
-							coordinates.add(new int[]{row+3,col});
-							coordinates.add(new int[]{row+1,col-1});
+							coordinates.add(new int[]{colX,rowY});
+							coordinates.add(new int[]{colX,rowY+1});
+							coordinates.add(new int[]{colX,rowY+2});
+							coordinates.add(new int[]{colX,rowY+3});
+							coordinates.add(new int[]{colX-1,rowY+1});
 							ship.getShipData().setCoordinates(coordinates);
 							
 							// draw
-							grid[row][col] = ship.getType();
-							grid[row+1][col] = ship.getType();
-							grid[row+2][col] = ship.getType();
-							grid[row+3][col] = ship.getType();
-							grid[row+1][col-1] = ship.getType();
+							grid[colX][rowY] = ship.getType();
+							grid[colX][rowY+1]= ship.getType();
+							grid[colX][rowY+2] = ship.getType();
+							grid[colX][rowY+3] = ship.getType();
+							grid[colX-1][rowY+1] = ship.getType();
 						}
 					}else {
-						row = ThreadLocalRandom.current().nextInt(1, height-1);
-						col = rand.nextInt(width-4);
-						System.out.println("Type " + ship.getType() + "  {" + row + ", " + col + "}");
+						rowY = ThreadLocalRandom.current().nextInt(1, height-1);
+						colX = rand.nextInt(width-4);
+						System.out.println("Type " + ship.getType() + "  {" + colX + ", " +  rowY + "}");
 						
-						if (grid[row+1][col+1] == '.' && grid[row+1][col+2] == '.' && grid[row+1][col+3] == '.'
-								&& grid[row+1][col+4] == '.' && grid[row][col+2] == '.') {
+						if (grid[colX+1][rowY+1] == '.' && grid[colX+2][rowY+1] == '.' && grid[colX+3][rowY+1] == '.'
+								&& grid[colX+4][rowY+1] == '.' && grid[colX+2][rowY] == '.') {
 							placed = true;
 
 							List<int[]> coordinates = new ArrayList<>();
-							coordinates.add(new int[]{row+1,col+1});
-							coordinates.add(new int[]{row+1,col+2});
-							coordinates.add(new int[]{row+1,col+3});
-							coordinates.add(new int[]{row+1,col+4});
-							coordinates.add(new int[]{row,col+2});
+							coordinates.add(new int[]{colX+1,rowY+1});
+							coordinates.add(new int[]{colX+2,rowY+1});
+							coordinates.add(new int[]{colX+3,rowY+1});
+							coordinates.add(new int[]{colX+4,rowY+1});
+							coordinates.add(new int[]{colX+2,rowY});
 							ship.getShipData().setCoordinates(coordinates);
 							
 							// draw
-							grid[row+1][col+1] = ship.getType();
-							grid[row+1][col+2] = ship.getType();
-							grid[row+1][col+3] = ship.getType();
-							grid[row+1][col+4] = ship.getType();
-							grid[row][col+2] = ship.getType();
+							grid[colX+1][rowY+1] = ship.getType();
+							grid[colX+2][rowY+1] = ship.getType();
+							grid[colX+3][rowY+1] = ship.getType();
+							grid[colX+4][rowY+1] = ship.getType();
+							grid[colX+2][rowY] = ship.getType();
 						}
 					}
 				}
 				break;
 			case 'C':
 				while (!placed) {
-					row = rand.nextInt(height - 1);
-					col = rand.nextInt(width - 1);
+					rowY = rand.nextInt(height - 1);
+					colX = rand.nextInt(width - 1);
 					
-					System.out.println("Type " + ship.getType() + "  {" + row + ", " + col);
-					if (grid[row][col] == '.' && grid[row][col + 1] == '.' && grid[row + 1][col] == '.'
-							&& grid[row + 1][col + 1] == '.') {
+					System.out.println("Type " + ship.getType() + "  {" + colX + ", " + rowY + "}");
+					if (grid[colX][rowY] == '.' && grid[colX + 1][rowY] == '.' && grid[colX][rowY + 1] == '.'
+							&& grid[colX + 1][rowY + 1] == '.') {
 						placed = true;
 
 						List<int[]> coordinates = new ArrayList<>();
-						coordinates.add(new int[]{row,col});
-						coordinates.add(new int[]{row,col+1});
-						coordinates.add(new int[]{row+1,col});
-						coordinates.add(new int[]{row+1,col+1});
+						coordinates.add(new int[]{colX,rowY});
+						coordinates.add(new int[]{colX+1,rowY});
+						coordinates.add(new int[]{colX,rowY+1});
+						coordinates.add(new int[]{colX+1,rowY+1});
 						ship.getShipData().setCoordinates(coordinates);
 						
 						// draw
-						grid[row][col] = ship.getType();
-						grid[row][col+1] = ship.getType();
-						grid[row+1][col] = ship.getType();
-						grid[row+1][col+1] = ship.getType();
+						grid[colX][rowY] = ship.getType();
+						grid[colX+1][rowY] = ship.getType();
+						grid[colX][rowY+1] = ship.getType();
+						grid[colX+1][rowY+1] = ship.getType();
 					}
 				}
 				break;

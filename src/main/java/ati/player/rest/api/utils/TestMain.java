@@ -31,6 +31,30 @@ public class TestMain {
 		}
 	}
 	
+	public static void main(String[] args) throws InterruptedException {
+		
+		while (true) {
+			Board board = new Board(20, 8);
+			board.addShip(new Ship("DD"));
+			board.addShip(new Ship("DD"));
+			board.addShip(new Ship("CA"));
+			board.addShip(new Ship("CA"));
+			board.addShip(new Ship("BB"));
+			board.addShip(new Ship("BB"));
+			
+			board.addShip(new Ship("OR"));
+			board.addShip(new Ship("OR"));
+			
+			board.addShip(new Ship("CV"));
+			board.addShip(new Ship("CV"));
+			board.addShip(new Ship("CV"));
+			board.addShip(new Ship("CV"));
+			board.placeShipsRandomly();
+			board.print();
+			Thread.sleep(2000);
+		}
+	}
+	
 	public static void main2(String[] args) {
 		List<Coordinate> hitList = new ArrayList<>();
 		hitList.add(new Coordinate(1, 1));
@@ -69,7 +93,7 @@ public class TestMain {
         hitCoordinateList.removeAll(toRemoveList);
     }
 	
-	public static void main(String[] args) {
+	public static void main3(String[] args) {
     	
     	List<Coordinate> hitCoordinateList = new ArrayList<>();
     	hitCoordinateList.add(new Coordinate(1, 1));

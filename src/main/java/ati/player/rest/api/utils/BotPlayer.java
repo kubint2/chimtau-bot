@@ -28,39 +28,31 @@ public class BotPlayer {
 	
 	
 	
-	private static BotPlayer instance;
+	// private BotPlayer instance;
 
-	private BotPlayer() {
+	public BotPlayer() {
 	}
 	
 	
-	public static synchronized BotPlayer getInstance() {
-		if(instance == null) {
-			instance = new BotPlayer();
-		}
-		return instance;
-	}
+//	public static synchronized BotPlayer getInstance() {
+//		if(instance == null) {
+//			instance = new BotPlayer();
+//		}
+//		return instance;
+//	}
 	
-	public static synchronized BotPlayer initInstance(int width, int height, List<ShipRequest> ships) {
-		instance = new BotPlayer();
-		instance.boardWidth = width;
-		instance.boardHeight = height;
-		instance.ships = ships;
+	public BotPlayer(int width, int height, List<ShipRequest> ships) {
+		// instance = new BotPlayer();
+		this.boardWidth = width;
+		this.boardHeight = height;
+		this.ships = ships;
 
 		for (ShipRequest shipRequest : ships) {
-			instance.shipMap.put(shipRequest.getType(), shipRequest.getQuantity());
+			this.shipMap.put(shipRequest.getType(), shipRequest.getQuantity());
 		}
 		
 		// init board
-		instance.board = new int[width][height];
-		
-//        for (int y = 0; y < height; y++) {
-//            for (int x = 0; x < width; x++) {
-//            	instance.board[x][y] = 1;
-//            }
-//        }
-
-		return instance;
+		this.board = new int[width][height];
 	}
 
 	// implement 
@@ -117,11 +109,11 @@ public class BotPlayer {
 			// check vertical
 			if (first.getY() == second.getY()) {
 				typeCheck = 2;
-				neightBour2point = getNeightBourTypeA(hitCoordinateList, true);
+				neightBour2point = getNeightBourTypeA(hitCoordinateList, false);
 
 			} else if (first.getX() == second.getX()) {
 				typeCheck = 3;
-				neightBour2point = getNeightBourTypeA(hitCoordinateList, false);
+				neightBour2point = getNeightBourTypeA(hitCoordinateList, true);
 			}
 
 			if (CollectionUtils.isNotEmpty(neightBour2point)) {
@@ -143,10 +135,10 @@ public class BotPlayer {
 				typeCheck = 3;
 				vertical = true;
 				// lấy 1 điểm trong 2 điểm đầu và cuối để shot
-				neightBour3point = getNeightBourTypeA(hitCoordinateList, true);
+				neightBour3point = getNeightBourTypeA(hitCoordinateList, false);
 			} else if (first.getX() == second.getX() && first.getX() == third.getX()) {
 				vertical = false;
-				neightBour3point = getNeightBourTypeA(hitCoordinateList, false);
+				neightBour3point = getNeightBourTypeA(hitCoordinateList, true);
 			} else {
 				vertical = null;
 				// 3 điểm không thẳng hàng -> tìm điểm góc vuông
@@ -218,36 +210,36 @@ public class BotPlayer {
     	Coordinate min;
     	Coordinate max;
 		if (vertical) {
-			Coordinate minCoordinateRow = hitList.stream().min(Comparator.comparing(Coordinate::getX))
+			Coordinate minCoordinateRowY = hitList.stream().min(Comparator.comparing(Coordinate::getY))
 					.orElseThrow(NoSuchElementException::new);
-			Coordinate maxCoordinateRow = hitList.stream().max(Comparator.comparing(Coordinate::getX))
+			Coordinate maxCoordinateRowY = hitList.stream().max(Comparator.comparing(Coordinate::getY))
 					.orElseThrow(NoSuchElementException::new);
 
-			int minRow = minCoordinateRow.getX();
-			int maxRow = maxCoordinateRow.getX();
-			int col = minCoordinateRow.getY();
+			int minRowY = minCoordinateRowY.getY();
+			int maxRowY = maxCoordinateRowY.getY();
+			int colX = minCoordinateRowY.getX();
 			// validate
-			if ((minRow - 1) > 0 && board[minRow - 1][col] == 0) {
-				neightBourTypeA.add(new Coordinate(minRow - 1, col));
+			if ((minRowY - 1) > 0 && board[colX][minRowY - 1] == 0) {
+				neightBourTypeA.add(new Coordinate(colX, minRowY - 1));
 			}
-			if ((maxRow + 1) < boardHeight && board[maxRow + 1][col] == 0) {
-				neightBourTypeA.add(new Coordinate(minRow - 1, col));
+			if ((maxRowY + 1) < boardHeight && board[colX][maxRowY + 1] == 0) {
+				neightBourTypeA.add(new Coordinate(colX, maxRowY + 1));
 			}
 		} else {
-			Coordinate minCoordinateCol = hitList.stream().min(Comparator.comparing(Coordinate::getY))
+			Coordinate minCoordinateColX = hitList.stream().min(Comparator.comparing(Coordinate::getX))
 					.orElseThrow(NoSuchElementException::new);
-			Coordinate maxCoordinateCol = hitList.stream().max(Comparator.comparing(Coordinate::getY))
+			Coordinate maxCoordinateColX = hitList.stream().max(Comparator.comparing(Coordinate::getX))
 					.orElseThrow(NoSuchElementException::new);
 
-        	int minCol = minCoordinateCol.getY();
-        	int maxCol = maxCoordinateCol.getY();
-        	int row = minCoordinateCol.getX();
+        	int minColX = minCoordinateColX.getX();
+        	int maxColX = maxCoordinateColX.getX();
+        	int rowY = minCoordinateColX.getY();
         	// validate
-        	if ((minCol-1) > 0 && board[row][minCol-1] == 0) {
-        		neightBourTypeA.add(new Coordinate(row, minCol-1));
+        	if ((minColX-1) > 0 && board[minColX-1][rowY] == 0) {
+        		neightBourTypeA.add(new Coordinate(minColX-1, rowY));
         	}
-        	if ((maxCol+1) < boardWidth && board[row][maxCol+1] == 0) {
-        		neightBourTypeA.add(new Coordinate(row, maxCol+1));
+        	if ((maxColX+1) < boardWidth && board[maxColX+1][rowY] == 0) {
+        		neightBourTypeA.add(new Coordinate(maxColX+1,rowY));
         	}
 		}    	
     	return neightBourTypeA;
