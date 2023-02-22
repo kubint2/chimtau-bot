@@ -72,13 +72,11 @@ public class Board {
         }
 		List<int[]> coordinates = new ArrayList<>();
         if (ship.isVertical()) {
-			coordinates.add(new int[]{colX+1,rowY+1});
-			coordinates.add(new int[]{colX+2,rowY+1});
-			coordinates.add(new int[]{colX+3,rowY+1});
-			coordinates.add(new int[]{colX+4,rowY+1});
-			coordinates.add(new int[]{colX+2,rowY+1});
-
-        	
+//			coordinates.add(new int[]{colX+1,rowY+1});
+//			coordinates.add(new int[]{colX+2,rowY+1});
+//			coordinates.add(new int[]{colX+3,rowY+1});
+//			coordinates.add(new int[]{colX+4,rowY+1});
+//			coordinates.add(new int[]{colX+2,rowY+1});
             for (int r = rowY; r < rowY + ship.getLength(); r++) {
                 grid[colX][r] = ship.getType();
     			coordinates.add(new int[]{colX, r});

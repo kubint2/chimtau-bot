@@ -11,6 +11,7 @@ import java.util.Random;
 import java.util.Set;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.omg.CORBA.exception_type;
 
 import ati.player.rest.api.entity.Coordinate;
 import ati.player.rest.api.request.ShipRequest;
@@ -144,7 +145,7 @@ public class BotPlayer {
 				// 3 điểm không thẳng hàng -> tìm điểm góc vuông
 				Coordinate coordinateFourth = findFourthCoordinate(first, second, third);
 				// Check valid coordinateFourth
-				if (board[coordinateFourth.getX()][coordinateFourth.getY()] == 0) {
+				if (isValidForShot(coordinateFourth)) {
 					neightBour3point.add(coordinateFourth);
 				}
 			}
@@ -181,7 +182,7 @@ public class BotPlayer {
             neighborCells.add(new Coordinate(x-1, y));
             neighborCells.add(new Coordinate(x+1, y));
             neighborCells.add(new Coordinate(x, y-1));
-            neighborCells.add(new Coordinate(x, y + 1));
+            neighborCells.add(new Coordinate(x, y+1));
         }
 
         // Tìm kiếm tất cả các ô hàng xóm chưa bị bắn
@@ -195,20 +196,26 @@ public class BotPlayer {
     }
     
     public boolean isValidForShot(Coordinate shot) {
-		if(shot.getX() >= boardWidth || shot.getY() >= boardHeight) {
-			return false;
-		}
-    	if(board[shot.getX()][shot.getY()] == 0) {
-			return true;
-		} {
-			return false;
-		}
+    	try {
+    		if(shot.getX() >= boardWidth || shot.getY() >= boardHeight || shot.getX() < 0  || shot.getY() < 0) {
+    			return false;
+    		}
+        	if(board[shot.getX()][shot.getY()] == 0) {
+    			return true;
+    		} {
+    			return false;
+    		}
+    	} catch (Exception e) {
+    		e.printStackTrace();
+    		return false;
+    	}
     }
     
     public List<Coordinate> getNeightBourTypeA(List<Coordinate> hitList, boolean vertical) {
     	List<Coordinate> neightBourTypeA = new ArrayList<>();
     	Coordinate min;
     	Coordinate max;
+    	Coordinate obj;
 		if (vertical) {
 			Coordinate minCoordinateRowY = hitList.stream().min(Comparator.comparing(Coordinate::getY))
 					.orElseThrow(NoSuchElementException::new);
@@ -219,11 +226,13 @@ public class BotPlayer {
 			int maxRowY = maxCoordinateRowY.getY();
 			int colX = minCoordinateRowY.getX();
 			// validate
-			if ((minRowY - 1) > 0 && board[colX][minRowY - 1] == 0) {
-				neightBourTypeA.add(new Coordinate(colX, minRowY - 1));
+			obj = new Coordinate(colX, minRowY - 1);
+			if (isValidForShot(obj)) {
+				neightBourTypeA.add(obj);
 			}
-			if ((maxRowY + 1) < boardHeight && board[colX][maxRowY + 1] == 0) {
-				neightBourTypeA.add(new Coordinate(colX, maxRowY + 1));
+			obj = new Coordinate(colX, maxRowY + 1);
+			if (isValidForShot(obj)) {
+				neightBourTypeA.add(obj);
 			}
 		} else {
 			Coordinate minCoordinateColX = hitList.stream().min(Comparator.comparing(Coordinate::getX))
@@ -235,11 +244,13 @@ public class BotPlayer {
         	int maxColX = maxCoordinateColX.getX();
         	int rowY = minCoordinateColX.getY();
         	// validate
-        	if ((minColX-1) > 0 && board[minColX-1][rowY] == 0) {
-        		neightBourTypeA.add(new Coordinate(minColX-1, rowY));
+			obj = new Coordinate(minColX-1, rowY);
+        	if (isValidForShot(obj)) {
+        		neightBourTypeA.add(obj);
         	}
-        	if ((maxColX+1) < boardWidth && board[maxColX+1][rowY] == 0) {
-        		neightBourTypeA.add(new Coordinate(maxColX+1,rowY));
+        	obj = new Coordinate(maxColX+1,rowY);
+        	if (isValidForShot(obj)) {
+        		neightBourTypeA.add(obj);
         	}
 		}    	
     	return neightBourTypeA;

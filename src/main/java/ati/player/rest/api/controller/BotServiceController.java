@@ -75,8 +75,9 @@ public class BotServiceController {
 	@RequestMapping(value = "/invite", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<?> invite(@RequestBody GameInviteRequest gameInviteReq, HttpServletRequest request)
 			throws Exception {
-		System.out.println("print " + JsonUtil.objectToJson(gameInviteReq));
-		logger.debug("print " + JsonUtil.objectToJson(gameInviteReq));
+		System.out.println("invite requestInfo " + JsonUtil.objectToJson(gameInviteReq));
+		logger.debug("invite requestInfo " + JsonUtil.objectToJson(gameInviteReq));
+
 		NotifyResult response = new NotifyResult();
 		try {
 			BotPlayer botPlayer = new BotPlayer(gameInviteReq.getBoardWidth(), gameInviteReq.getBoardHeight(), gameInviteReq.getShips());
@@ -90,6 +91,7 @@ public class BotServiceController {
 			e.printStackTrace();
 			logger.error(e);
 		}
+		System.out.println("Response: invite" + JsonUtil.objectToJson(response));
 		return new ResponseEntity<NotifyResult>(response, HttpStatus.OK);
 	}
 	
@@ -97,6 +99,9 @@ public class BotServiceController {
 	@RequestMapping(value = "/place-ships", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<?> placeShips(@RequestBody GamePlaceShipsRequest gamePlaceShipsRequest, HttpServletRequest request)
 			throws Exception {
+		System.out.println("place-ships requestInfo " + JsonUtil.objectToJson(gamePlaceShipsRequest));
+		logger.debug("place-ships requestInfo " + JsonUtil.objectToJson(gamePlaceShipsRequest));
+		
 		GameStartResult response = new GameStartResult();
 		try {
 			String sessionID = request.getHeader("X-SESSION-ID");
@@ -130,6 +135,7 @@ public class BotServiceController {
 			e.printStackTrace();
 			logger.error(e);
 		}
+		System.out.println("Response: place-ships" + JsonUtil.objectToJson(response));
 		return new ResponseEntity<GameStartResult>(response, HttpStatus.OK);
 	}
 	
@@ -137,6 +143,9 @@ public class BotServiceController {
 	@RequestMapping(value = "/shoot", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<?> shoot(@RequestBody GameTurnRequest gameTurnReq, HttpServletRequest request)
 			throws Exception {
+		System.out.println("shoot requestInfo " + JsonUtil.objectToJson(gameTurnReq));
+		logger.debug("shoot requestInfo " + JsonUtil.objectToJson(gameTurnReq));
+		
 		GameTurnResult response = new GameTurnResult();
 		try {
 			String sessionID = request.getHeader("X-SESSION-ID");
@@ -150,6 +159,7 @@ public class BotServiceController {
 			e.printStackTrace();
 			logger.error(e);
 		}
+		System.out.println("Response: shot" + JsonUtil.objectToJson(response));
 		return new ResponseEntity<GameTurnResult>(response, HttpStatus.OK);
 	}
 	
@@ -157,6 +167,9 @@ public class BotServiceController {
 	@RequestMapping(value = "/notify", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<?> notify(@RequestBody GameNotifyRequest gameNotifyReq, HttpServletRequest request)
 			throws Exception {
+		System.out.println("notify requestInfo " + JsonUtil.objectToJson(gameNotifyReq));
+		logger.debug("notify requestInfo " + JsonUtil.objectToJson(gameNotifyReq));
+		
 		NotifyResult response = new NotifyResult();
 		try {
 			response.setSuccess(true);
@@ -164,7 +177,7 @@ public class BotServiceController {
 			BotPlayer botPlayer = botPlayerMap.get(sessionID);
 			
 			
-			if(gameNotifyReq.getPlayerId().equals(BOT_ID)) {
+			if(gameNotifyReq.getPlayerId().equalsIgnoreCase(BOT_ID)) {
 				List<ShotData> shotResult = gameNotifyReq.getShots();
 				for (ShotData shotData : shotResult) {
 					int[] coordinate = shotData.getCoordinate();
@@ -197,6 +210,7 @@ public class BotServiceController {
 			e.printStackTrace();
 			logger.error(e);
 		}
+		System.out.println("Response: notify" + JsonUtil.objectToJson(response));
 		return new ResponseEntity<NotifyResult>(response, HttpStatus.OK);
 	}
 	
@@ -204,6 +218,9 @@ public class BotServiceController {
 	@RequestMapping(value = "/game-over", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<?> gameOver(@RequestBody GameOverRequest gameOverReq, HttpServletRequest request)
 			throws Exception {
+		System.out.println("gameOver requestInfo " + JsonUtil.objectToJson(gameOverReq));
+		logger.debug("gameOver requestInfo " + JsonUtil.objectToJson(gameOverReq));
+		
 		NotifyResult response = new NotifyResult();
 		try {
 			response.setSuccess(true);
@@ -217,6 +234,7 @@ public class BotServiceController {
 			e.printStackTrace();
 			logger.error(e);
 		}
+		System.out.println("Response: game-over" + JsonUtil.objectToJson(response));
 		return new ResponseEntity<NotifyResult>(response, HttpStatus.OK);
 	}
 	
@@ -227,6 +245,7 @@ public class BotServiceController {
 		String sessionID = request.getHeader("X-SESSION-ID");
 		BotPlayer botPlayer = botPlayerMap.get(sessionID);
 
+		System.out.println("Response: botPlayer" + JsonUtil.objectToJson(botPlayer));
 		return new ResponseEntity<BotPlayer>(botPlayer, HttpStatus.OK);
 	}
 	
