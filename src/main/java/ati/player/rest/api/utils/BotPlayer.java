@@ -133,11 +133,11 @@ public class BotPlayer {
 			// check vertical
 			if (first.getY() == second.getY() && first.getY() == third.getY()) {
 				typeCheck = 3;
-				vertical = true;
+				vertical = false;
 				// lấy 1 điểm trong 2 điểm đầu và cuối để shot
 				neightBour3point = getNeightBourTypeA(hitCoordinateList, false);
 			} else if (first.getX() == second.getX() && first.getX() == third.getX()) {
-				vertical = false;
+				vertical = true;
 				neightBour3point = getNeightBourTypeA(hitCoordinateList, true);
 			} else {
 				vertical = null;
@@ -166,19 +166,19 @@ public class BotPlayer {
 			List<Coordinate> neightBour4point = new ArrayList<>();
 			Coordinate remainPoin;
 
-			if (first.getY() == second.getY() && first.getY() == third.getY()&& four.getY() == four.getY()) {
-				vertical = true;
-				Coordinate minCoordinateRowY = hitCoordinateList.stream().min(Comparator.comparing(Coordinate::getY))
-						.orElseThrow(NoSuchElementException::new);
-				remainPoin = new Coordinate(minCoordinateRowY.getX() - 1, minCoordinateRowY.getY() + 1);
-				if (isValidForShot(remainPoin)) {
-					neightBour4point.add(remainPoin);
-				}
-			} else if (first.getX() == second.getX() && first.getX() == third.getX()&& four.getX() == four.getX()) {
+			if (first.getY() == second.getY() && first.getY() == third.getY()&& first.getY() == four.getY()) {
 				vertical = false;
 				Coordinate minCoordinateColX = hitCoordinateList.stream().min(Comparator.comparing(Coordinate::getX))
 						.orElseThrow(NoSuchElementException::new);
 				remainPoin = new Coordinate(minCoordinateColX.getX()+1, minCoordinateColX.getY()-1);
+				if (isValidForShot(remainPoin)) {
+					neightBour4point.add(remainPoin);
+				}
+			} else if (first.getX() == second.getX() && first.getX() == third.getX()&& first.getX() == four.getX()) {
+				vertical = true;
+				Coordinate minCoordinateRowY = hitCoordinateList.stream().min(Comparator.comparing(Coordinate::getY))
+						.orElseThrow(NoSuchElementException::new);
+				remainPoin = new Coordinate(minCoordinateRowY.getX() - 1, minCoordinateRowY.getY() + 1);
 				if (isValidForShot(remainPoin)) {
 					neightBour4point.add(remainPoin);
 				}
