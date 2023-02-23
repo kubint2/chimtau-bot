@@ -340,6 +340,29 @@ public class BotPlayer {
         return fourth;
     }
     
+//    public static Coordinate findFourthCoordinate(Coordinate first, Coordinate second, Coordinate third) {
+//        // Tính trung bình cộng của các tọa độ
+//        int xAvg = (first.getX() + second.getX() + third.getX()) / 3;
+//        int yAvg = (first.getY() + second.getY() + third.getY()) / 3;
+//
+//        // Phản xạ tọa độ qua đường chéo của hình vuông
+//        int x4 = 2 * xAvg - third.getX();
+//        int y4 = 2 * yAvg - third.getY();
+//
+//        Coordinate fourth = new Coordinate(x4, y4);
+//        return fourth;
+//    }
+    
+    public static void main(String[] args) {
+        Coordinate A = new Coordinate(8, 4);
+        Coordinate B = new Coordinate(8, 5);
+        Coordinate C = new Coordinate(9, 5);
+
+        Coordinate D = findFourthCoordinate(A, B, C);
+        System.out.println("D: x=" + D.getX() );
+        System.out.println("D: y=" + D.getY() );
+    }
+    
     public static Coordinate findSquareCorner(List<Coordinate> coordinates) {
         // Tính độ dài đường chéo chính của hình vuông
         double diagonalLength = Math.sqrt(2) * getDistance(coordinates.get(0), coordinates.get(1));
