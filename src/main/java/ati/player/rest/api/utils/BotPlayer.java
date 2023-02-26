@@ -64,8 +64,10 @@ public class BotPlayer {
     private Boolean vertical = null;
     public Map<String, Integer> shipEnemyMap = new HashMap<>();
 	public int [][] boardEnemy ;
+    public List<Coordinate> priorityShotsList = new ArrayList<>();
     
     public List<Coordinate> coordinatesShotted = new ArrayList<>();
+    boolean flagGetMaxShot = false;
 
     public void resetCalculator() {
     	typeCheck = 0;
@@ -73,20 +75,33 @@ public class BotPlayer {
     	vertical = null;
     	// hitCoordinateList = new ArrayList<>();
     }
-    
+
 	public List<int[]> getShotsTurnResult() {
 		List<int[]> result = new ArrayList<>();
 		List<Coordinate> showTurns = this.getshotsTurn();
 		if(CollectionUtils.isEmpty(showTurns)) {
 			// return random shot
-			Coordinate Coordinate = makeRandomShot();
+			Coordinate Coordinate = makeSmartRandomShot();
 			result.add(new int[] {Coordinate.getX(), Coordinate.getY()});
 		} else {
-			if(showTurns.size() == 2) {
+			if (showTurns.size() >= 2) {
 				for (Coordinate coordinate : showTurns) {
-					result.add(new int[] {coordinate.getX(), coordinate.getY()});
-					if(--maxShots <= 0) {
-						break;
+					coordinate.setScore(boardEnemy[coordinate.getX()][coordinate.getY()]);
+				}
+				showTurns.sort((o1, o2) -> o2.getScore() - o1.getScore());
+				
+				// print
+				System.out.println("=== Hit List : " + JsonUtil.objectToJson(hitCoordinateList));
+				System.out.println("=== Shot Output : " + JsonUtil.objectToJson(showTurns));
+				
+				if (!flagGetMaxShot) {
+					result.add(new int[] { showTurns.get(0).getX(), showTurns.get(0).getY() });
+				} else {
+					for (Coordinate coordinate : showTurns) {
+						result.add(new int[] {coordinate.getX(), coordinate.getY()});
+						if(--maxShots <= 0) {
+							break;
+						}
 					}
 				}
 			} else {
@@ -102,13 +117,15 @@ public class BotPlayer {
 			typeCheck = 0;
 			// Random shot
 			List<Coordinate> shotsTurn = new ArrayList<>();
-			shotsTurn.add(this.getCoordinateMaxSore());
+			shotsTurn.add(this.makeSmartRandomShot());
 			return shotsTurn;
 		} else if (hitCoordinateList.size() == 1) {
 			typeCheck = 1;
 			// Shot neightBour previousHit
 			return makeShotNeighbors();
 		} else if (hitCoordinateList.size() == 2) {
+			flagGetMaxShot = true;
+
 			// Shot vertical or Not
 			Coordinate first = hitCoordinateList.get(0);
 			Coordinate second = hitCoordinateList.get(1);
@@ -125,11 +142,6 @@ public class BotPlayer {
 			}
 
 			if (CollectionUtils.isNotEmpty(neightBour2point)) {
-				for (Coordinate coordinate : neightBour2point) {
-					coordinate.setScore(boardEnemy[coordinate.getX()][coordinate.getY()]);
-				}
-				neightBour2point.sort((o1, o2) -> o2.getScore() - o1.getScore());
-				
 				return neightBour2point;
 			} else {
 				typeCheck = 4;
@@ -145,11 +157,13 @@ public class BotPlayer {
 			List<Coordinate> neightBour3point = new ArrayList<>();
 			// check vertical
 			if (first.getY() == second.getY() && first.getY() == third.getY()) {
+				flagGetMaxShot = true;
 				typeCheck = 3;
 				vertical = false;
 				// lấy 1 điểm trong 2 điểm đầu và cuối để shot
 				neightBour3point = getNeightBourTypeA(hitCoordinateList, false);
 			} else if (first.getX() == second.getX() && first.getX() == third.getX()) {
+				flagGetMaxShot = true;
 				vertical = true;
 				neightBour3point = getNeightBourTypeA(hitCoordinateList, true);
 			} else {
@@ -166,11 +180,6 @@ public class BotPlayer {
 			}
 
 			if (CollectionUtils.isNotEmpty(neightBour3point)) {
-				for (Coordinate coordinate : neightBour3point) {
-					coordinate.setScore(boardEnemy[coordinate.getX()][coordinate.getY()]);
-				}
-				neightBour3point.sort((o1, o2) -> o2.getScore() - o1.getScore());
-				
 				return neightBour3point;
 			} else {
 				// Shot neightBour previousHit
@@ -225,11 +234,6 @@ public class BotPlayer {
 			}
 
 			if (CollectionUtils.isNotEmpty(neightBour4point)) {
-				for (Coordinate coordinate : neightBour4point) {
-					coordinate.setScore(boardEnemy[coordinate.getX()][coordinate.getY()]);
-				}
-				neightBour4point.sort((o1, o2) -> o2.getScore() - o1.getScore());
-				
 				return neightBour4point;
 			} else {
 				// Shot neightBour previousHit
@@ -253,7 +257,17 @@ public class BotPlayer {
         return new Coordinate(x, y);
     }
     
-    public Coordinate getCoordinateMaxSore() {
+    public Coordinate makeSmartRandomShot() {
+    	Coordinate coordinate = null;
+    	if (CollectionUtils.isNotEmpty(priorityShotsList)) {
+    		coordinate = priorityShotsList.get(0);
+    		priorityShotsList.remove(coordinate);
+    	}
+    	if(coordinate != null && board[coordinate.getX()][coordinate.getY()] == 0) {
+    		return coordinate;
+    	}
+    	
+
 		List<Coordinate> coordinates = new ArrayList<>();
         for (int y = 0; y < 8; y++) {
             for (int x = 0; x < 20; x++) {
@@ -261,14 +275,14 @@ public class BotPlayer {
                 //System.out.print(boardEnemy[x][y] + "  ");
             }
         }
-		Coordinate maxScore = coordinates.stream().max(Comparator.comparing(Coordinate::getScore))
+		coordinate = coordinates.stream().max(Comparator.comparing(Coordinate::getScore))
 				.orElseThrow(NoSuchElementException::new);
-		if (maxScore != null) {
-			 System.out.println("MaxScore: " + JsonUtil.objectToJson(maxScore));
-				return maxScore;
-		} else {
-			return makeRandomShot();
+		if (coordinate != null) {
+			 System.out.println("MaxScore: " + JsonUtil.objectToJson(coordinate));
+				return coordinate;
 		}
+		
+		return makeRandomShot();
     }
     
     public List<Coordinate> makeShotNeighbors(Coordinate shot) {
@@ -305,12 +319,9 @@ public class BotPlayer {
         List<Coordinate> unshotNeighbors = new ArrayList<>();
         for (Coordinate neighbor : neighborCells) {
             if (this.isValidForShot(neighbor)) {
-            	// setScore
-            	neighbor.setScore(boardEnemy[neighbor.getX()][neighbor.getY()]);
                 unshotNeighbors.add(neighbor);
             }
         }
-        unshotNeighbors.sort((o1, o2) -> o2.getScore() - o1.getScore());
         return unshotNeighbors;
     }
     
@@ -355,7 +366,7 @@ public class BotPlayer {
 			int minColX = hitList.stream().min(Comparator.comparing(Coordinate::getX))
 					.orElseThrow(NoSuchElementException::new).getX();
 			int maxColX = hitList.stream().max(Comparator.comparing(Coordinate::getX))
-					.orElseThrow(NoSuchElementException::new).getY();
+					.orElseThrow(NoSuchElementException::new).getX();
 
         	int rowY = hitList.get(0).getY();
         	// validate

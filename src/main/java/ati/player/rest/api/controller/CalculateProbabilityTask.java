@@ -7,9 +7,9 @@ import ati.player.rest.api.entity.Coordinate;
 import ati.player.rest.api.utils.Board;
 import ati.player.rest.api.utils.Ship;
 
-class CalculateProbabilityTask implements Runnable
+public class CalculateProbabilityTask implements Runnable
 {
-	int [][] boardEnemy ;
+	public int [][] boardEnemy ;
 	List<Coordinate> coordinatesShotted;
 	public Map<String, Integer> shipEnemyMap;
 	int width;
@@ -17,7 +17,7 @@ class CalculateProbabilityTask implements Runnable
 	public int count=0;
 	
 	
-	CalculateProbabilityTask (int width, int heigh, List<Coordinate> coordinatesShotted, Map<String, Integer> shipEnemyMap) {
+	public CalculateProbabilityTask (int width, int heigh, List<Coordinate> coordinatesShotted, Map<String, Integer> shipEnemyMap) {
 		this.width = width;
 		this.heigh = heigh;
 		this.boardEnemy = new int[width][heigh] ;
