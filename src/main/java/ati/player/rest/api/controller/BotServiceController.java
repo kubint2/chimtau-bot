@@ -18,6 +18,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -62,6 +66,8 @@ public class BotServiceController {
 	public static final String RESULT_MISS = "MISS";
 	
 	public static final String BOT_ID = "chimtau";
+	
+	public static final int TIME_OUT = 5000;
 
 	private Map<String, BotPlayer> botPlayerMap = new HashMap<>();
 	
@@ -87,6 +93,9 @@ public class BotServiceController {
 			// botPlayer.initInstance(gameInviteReq.getBoardWidth(), gameInviteReq.getBoardHeight(), gameInviteReq.getShips());
 			// set response
 			response.setSuccess(true);
+
+			//
+			calculateProbailityTask(botPlayer);
 		} catch (Exception e) {
 			e.printStackTrace();
 			logger.error(e);
@@ -178,27 +187,33 @@ public class BotServiceController {
 			response.setSuccess(true);
 			String sessionID = request.getHeader("X-SESSION-ID");
 			BotPlayer botPlayer = botPlayerMap.get(sessionID);
-			
-			
+			boolean calculateProbabilityTask =  false;
+
 			if(gameNotifyReq.getPlayerId().equalsIgnoreCase(BOT_ID)) {
 				List<ShotData> shotResult = gameNotifyReq.getShots();
 				for (ShotData shotData : shotResult) {
 					int[] coordinate = shotData.getCoordinate();
 					int x = coordinate[0];
 					int y = coordinate[1];
+					Coordinate coordinateObj = new Coordinate(x, y);
+					botPlayer.coordinatesShotted.add(coordinateObj);
+					
 					if(shotData.getStatus().equalsIgnoreCase(RESULT_HIT)) {
-						botPlayer.hitCoordinateList.add(new Coordinate(x, y));
+						botPlayer.hitCoordinateList.add(coordinateObj);
 						botPlayer.board[x][y]=2;
 					} else {
 						botPlayer.board[x][y]=1;
+						calculateProbabilityTask = true;
 					}
 				}
 				// incase sunk ship data or [ ]
 				if(CollectionUtils.isNotEmpty(gameNotifyReq.getSunkShips())) {
+					calculateProbabilityTask = true;
+
 					for (ShipData shipData : gameNotifyReq.getSunkShips()) {
-						if(botPlayer.shipMap.containsKey(shipData.getType())) {
-							Integer quanty = botPlayer.shipMap.get(shipData.getType()) - 1;
-							botPlayer.shipMap.put(shipData.getType(), quanty);
+						if(botPlayer.shipEnemyMap.containsKey(shipData.getType())) {
+							Integer quanty = botPlayer.shipEnemyMap.get(shipData.getType()) - 1;
+							botPlayer.shipEnemyMap.put(shipData.getType(), quanty);
 						}
 						for (int[] coordinate : shipData.getCoordinates()) {
 							int x = coordinate[0];
@@ -208,13 +223,32 @@ public class BotServiceController {
 						}
 					}
 				}
-			}
+
+				// check hitList
+				if (calculateProbabilityTask) {
+					calculateProbailityTask(botPlayer);
+				}
+			} 
 		} catch (Exception e) {
 			e.printStackTrace();
 			logger.error(e);
 		}
 		System.out.println("Response: notify" + JsonUtil.objectToJson(response));
 		return new ResponseEntity<NotifyResult>(response, HttpStatus.OK);
+	}
+
+	private void calculateProbailityTask(BotPlayer botPlayer) throws InterruptedException {
+		CalculateProbabilityTask task = new CalculateProbabilityTask(botPlayer.boardWidth,
+				botPlayer.boardHeight, botPlayer.coordinatesShotted, botPlayer.shipEnemyMap);
+
+		ScheduledExecutorService executor = Executors.newScheduledThreadPool(2);
+		Future<?> future = executor.submit(task);
+		Runnable cancelTask = () -> future.cancel(true);
+		executor.schedule(cancelTask, TIME_OUT, TimeUnit.MILLISECONDS);
+		executor.shutdown();
+		Thread.sleep(TIME_OUT);
+		
+		botPlayer.boardEnemy = task.boardEnemy;
 	}
 	
 	@ResponseBody

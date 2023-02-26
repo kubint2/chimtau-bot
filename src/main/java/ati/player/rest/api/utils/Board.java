@@ -6,17 +6,26 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
-import org.springframework.web.client.HttpClientErrorException.Forbidden;
+import org.apache.commons.collections.CollectionUtils;
 
 import ati.player.rest.api.entity.Coordinate;
 
 public class Board {
+	
     private int width;
     private int height;
     private char[][] grid;
     private List<Ship> ships;
+    boolean flagCanPutOnBorder = false;
+    boolean flagCanHaveNeighbour = false;
+    int tryCountCheckNeghbour = 0;
+    private static final char DOT = '.';
+    private static final int MAX_TRY_COUNT = 300;
     
-    int tryCount = 0;
+    
+    List<Coordinate> coordinatesShotted = new ArrayList<>();
+    
+    List<Coordinate> coordinatesPutted = new ArrayList<>();
 
     public Board(int width, int height) {
         this.width = width;
@@ -25,10 +34,50 @@ public class Board {
         
         this.grid = new char[width][height];
         for (int i = 0; i < width; i++) {
-            Arrays.fill(grid[i], '.');
+            Arrays.fill(grid[i], DOT);
         }
     }
+    
+    public Board(int width, int height, List<Coordinate> coordinatesShotted, boolean flagCanPutOnBorder, boolean flagCanHaveNeighbour) {
+        this.width = width;
+        this.height = height;
+        this.ships = new ArrayList<>();
+        
+        this.grid = new char[width][height];
+        for (int i = 0; i < width; i++) {
+            Arrays.fill(grid[i], DOT);
+        }
+        
+        this.coordinatesShotted = coordinatesShotted;
+        if(CollectionUtils.isNotEmpty(coordinatesShotted)) {
+        	for (Coordinate coordinate : coordinatesShotted) {
+        		grid[coordinate.getX()][coordinate.getY()] = 'x';
+			}
+        }
+        
+        
+        this.flagCanPutOnBorder = flagCanPutOnBorder;
+        this.flagCanHaveNeighbour = flagCanHaveNeighbour;
+    }
 
+    public void resetBoard() {
+        this.grid = new char[width][height];
+        for (int i = 0; i < width; i++) {
+            Arrays.fill(grid[i], DOT);
+        }
+
+        if(CollectionUtils.isNotEmpty(coordinatesShotted)) {
+        	for (Coordinate coordinate : coordinatesShotted) {
+        		grid[coordinate.getX()][coordinate.getY()] = 'x';
+			}
+        }
+        
+        
+        this.flagCanPutOnBorder = true;
+        this.flagCanHaveNeighbour = true;
+    }
+    
+    
     public void print() {
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
@@ -37,7 +86,20 @@ public class Board {
             System.out.println();
         }
     }
+    
+    public List<Coordinate> getListDot() {
+    	List<Coordinate> coordinates = new ArrayList<>();
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+            	if (grid[x][y] == DOT) {
+            		coordinates.add(new Coordinate(x, y));
+            	}
+            }
+        }
+		return coordinates;
+    }
 
+    
     public void addShip(Ship ship) {
         ships.add(ship);
     }
@@ -46,208 +108,182 @@ public class Board {
         return ships;
     }
     
-    public boolean canPlaceShipTypeA(Ship ship, int rowY, int colX) {
-        if (rowY < 0 || colX < 0 || rowY >= height || colX >= width) {
-            return false;
-        }
-        if (ship.isVertical()) {
-            if (rowY + ship.getLength() > height) {
+    public boolean validPlaceShip (List<Coordinate> coordinates) {
+    	for (Coordinate coordinate : coordinates) {
+        	int colX = coordinate.getX();
+        	int rowY = coordinate.getY();
+            if (rowY < 0 || colX < 0 || rowY >= height || colX >= width) {
                 return false;
             }
-            for (int r = rowY; r < rowY + ship.getLength(); r++) {
-                if (grid[colX][r] != '.') {
-                    return false;
-                }
+        	
+            if(!this.flagCanPutOnBorder) {
+    			if (colX == 0 || colX == width - 1 || rowY == 0 || rowY == height - 1) {
+    				return false;
+    			}
             }
-        } else {
-            if (colX + ship.getLength() > width) {
-                return false;
+
+    		if(grid[colX][rowY] != DOT ) {
+    			return false ;
+    		}
+    		
+            if (!flagCanHaveNeighbour && tryCountCheckNeghbour < 100) {
+            	List<Coordinate> neighbours = GameUtil.getCoordinateNeighbours(coordinate, width, height);
+            	if (CollectionUtils.isNotEmpty(coordinates)) {
+            		for (Coordinate neighbour : neighbours) {
+            			if(grid[neighbour.getX()][neighbour.getY()] != DOT) {
+                        	tryCountCheckNeghbour++;
+            				return false;
+            			}
+					}
+            	}
             }
-            for (int c = colX; c < colX + ship.getLength(); c++) {
-                if (grid[c][rowY] != '.') {
-                    return false;
-                }
-            }
-        }
-        return true;
+		}
+    	return true;
     }
     
-    public boolean placeShipTypeA(Ship ship) {
+	public List<Coordinate> placeShipDDCABB(Ship ship) {
 		Random rand = new Random();
 		int rowY, colX;
-		rowY = rand.nextInt(height);
-		colX = rand.nextInt(width);
-		boolean vertical = rand.nextBoolean();
-		ship.setVertical(vertical);
+		List<Coordinate> coordinates;
+		int tryCount = MAX_TRY_COUNT;
+
+		while (tryCount-- > 0) {
+			rowY = rand.nextInt(height);
+			colX = rand.nextInt(width);
+			boolean vertical = rand.nextBoolean();
+			ship.setVertical(vertical);
+			coordinates = new ArrayList<>();
+
+			if (ship.isVertical()) {
+				for (int r = rowY; r < rowY + ship.getLength(); r++) {
+					coordinates.add(new Coordinate(colX, r));
+				}
+			} else {
+				for (int c = colX; c < colX + ship.getLength(); c++) {
+					coordinates.add(new Coordinate(c, rowY));
+				}
+			}
+
+			if (!validPlaceShip(coordinates)) {
+				continue;
+			}
+
+			return coordinates;
+		}
+
+		return null;
+	}
+    
+    public List<Coordinate> placeShipCV(Ship ship) {
+		Random rand = new Random();
+		int rowY, colX;
+		List<Coordinate> coordinates;
+		int tryCount = MAX_TRY_COUNT;
+		boolean vertical;
 		
-        if (!canPlaceShipTypeA(ship, rowY, colX)) {
-            return false;
-        }
-		List<Coordinate> coordinates = new ArrayList<>();
-        if (ship.isVertical()) {
-            for (int r = rowY; r < rowY + ship.getLength(); r++) {
-    			coordinates.add(new Coordinate(colX, r));
-            }
-        } else {
-            for (int c = colX; c < colX + ship.getLength(); c++) {
-                coordinates.add(new Coordinate(c,rowY));
-            }
-        }
-        
-        // not on border
-        for (Coordinate coordinate : coordinates) {
-	        // not on border
-			if (coordinate.getX()==0 || coordinate.getX()==width-1
-					|| coordinate.getY()==0 || coordinate.getY() == height-1) {
-				return false ;
+		while (tryCount-- > 0) {
+			vertical = rand.nextBoolean();
+			if (vertical) {
+				rowY = rand.nextInt(height - 4);
+				colX = ThreadLocalRandom.current().nextInt(1, width - 1);
+
+				// add coordinates
+				coordinates = new ArrayList<>();
+				coordinates.add(new Coordinate(colX, rowY)); //
+				coordinates.add(new Coordinate(colX, rowY + 1));
+				coordinates.add(new Coordinate(colX, rowY + 2));
+				coordinates.add(new Coordinate(colX, rowY + 3));
+				coordinates.add(new Coordinate(colX - 1, rowY + 1));
+
+				if (!validPlaceShip(coordinates)) {
+					continue;
+				}
+				
+				return coordinates;
+
+			} else {
+				rowY = ThreadLocalRandom.current().nextInt(1, height - 1);
+				colX = rand.nextInt(width - 4);
+
+				coordinates = new ArrayList<>();
+				coordinates.add(new Coordinate(colX + 1, rowY + 1));
+				coordinates.add(new Coordinate(colX + 2, rowY + 1));
+				coordinates.add(new Coordinate(colX + 3, rowY + 1));
+				coordinates.add(new Coordinate(colX + 4, rowY + 1));
+				coordinates.add(new Coordinate(colX + 2, rowY));
+
+				if (!validPlaceShip(coordinates)) {
+					continue;
+				}
+
+				return coordinates;
 			}
 		}
-
-		// draw
-		for (Coordinate coordinate : coordinates) {
-			grid[coordinate.getX()][coordinate.getY()] = ship.getType();
-		}
-        ship.coordinates = coordinates;
-        return true;
+		return null;
     }
-    
-    public boolean placeShipTypeB(Ship ship, boolean vertical) {
+
+	private List<Coordinate> placeShipOR(Ship ship) {
+		int rowY;
+		int colX;
 		Random rand = new Random();
-		int rowY, colX;
-		if(vertical) {
-			rowY = rand.nextInt(height-4);
-			colX = ThreadLocalRandom.current().nextInt(1, width-1);
-			
-			// add coordinates
-			List<Coordinate> coordinates = new ArrayList<>();
-			coordinates.add(new Coordinate(colX, rowY)); //
+		List<Coordinate> coordinates = new ArrayList<>();
+		int tryCount = MAX_TRY_COUNT;
+		
+		while (tryCount-- > 0) {
+			rowY = rand.nextInt(height - 1);
+			colX = rand.nextInt(width - 1);
+
+			coordinates = new ArrayList<>();
+			coordinates.add(new Coordinate(colX,rowY));
+			coordinates.add(new Coordinate(colX+1,rowY));
 			coordinates.add(new Coordinate(colX,rowY+1));
-			coordinates.add(new Coordinate(colX,rowY+2));
-			coordinates.add(new Coordinate(colX,rowY+3));
-			coordinates.add(new Coordinate(colX-1,rowY+1));
-
-	        for (Coordinate coordinate : coordinates) {
-		        // not on border
-				if (coordinate.getX()==0 || coordinate.getX()==width-1
-						|| coordinate.getY()==0 || coordinate.getY() == height-1) {
-					return false ;
-				}
-		        // value not is .
-				if(grid[coordinate.getX()][coordinate.getY()] != '.' ) {
-					return false ;
-				}
-			}
-
-	        ship.coordinates = coordinates;
-			// draw
-			for (Coordinate coordinate : coordinates) {
-				grid[coordinate.getX()][coordinate.getY()] = ship.getType();
-			}
-		}else {
-			rowY = ThreadLocalRandom.current().nextInt(1, height-1);
-			colX = rand.nextInt(width-4);
-			
-			List<Coordinate> coordinates = new ArrayList<>();
 			coordinates.add(new Coordinate(colX+1,rowY+1));
-			coordinates.add(new Coordinate(colX+2,rowY+1));
-			coordinates.add(new Coordinate(colX+3,rowY+1));
-			coordinates.add(new Coordinate(colX+4,rowY+1));
-			coordinates.add(new Coordinate(colX+2,rowY));
-			
-	        for (Coordinate coordinate : coordinates) {
-		        // not on border
-				if (coordinate.getX()==0 || coordinate.getX()==width-1
-						|| coordinate.getY()==0 || coordinate.getY() == height-1) {
-					return false ;
-				}
-		        // value not is .
-				if(grid[coordinate.getX()][coordinate.getY()] != '.' ) {
-					return false ;
-				}
+
+			if (!validPlaceShip(coordinates)) {
+				continue;
 			}
 
-			ship.coordinates = coordinates;
-			// draw
-			for (Coordinate coordinate : coordinates) {
-				grid[coordinate.getX()][coordinate.getY()] = ship.getType();
-			}
+			return coordinates;
 		}
-		return true;
-    }
-    
+		return null;
+	}    
 
 	public void placeShipsRandomly() {
 
-		Random rand = new Random();
-		int rowY;
-		int colX;
-		boolean vertical;
-		for (Ship ship : ships) {
-			boolean placed = false;
-			switch (ship.getType()) {
-			case 'A':
-				while (!placed) {
-					if (placeShipTypeA(ship)) {
-						placed = true;
-					}
+		ships.sort((o1, o2) -> o2.getLength() - o1.getLength());
+		boolean flagLoop = true;
+		while (flagLoop) {
+			flagLoop = false;
+
+			for (Ship ship : ships) {
+				List<Coordinate> coordinates = null;
+				if (Ship.SHIP_DD.equalsIgnoreCase(ship.typeDesc) || Ship.SHIP_CA.equalsIgnoreCase(ship.typeDesc)
+						|| Ship.SHIP_BB.equalsIgnoreCase(ship.typeDesc)) {
+					coordinates = placeShipDDCABB(ship);
+				} else if (Ship.SHIP_CV.equalsIgnoreCase(ship.typeDesc)) {
+					coordinates = placeShipCV(ship);
+				} else if (Ship.SHIP_OR.equalsIgnoreCase(ship.typeDesc)) {
+					coordinates = placeShipOR(ship);
 				}
-				break;
-			case 'B':
-				while (!placed) {
-					vertical = rand.nextBoolean();
-					if (placeShipTypeB(ship, vertical)) {
-						placed = true;
+
+				if (CollectionUtils.isEmpty(coordinates)) {
+					flagCanPutOnBorder = true;
+					flagCanHaveNeighbour = true;
+
+					
+					this.resetBoard();
+					
+					flagLoop = true;
+					break;
+				} else {
+					for (Coordinate coordinate : coordinates) {
+						grid[coordinate.getX()][coordinate.getY()] = ship.getType();
 					}
+					ship.coordinates = coordinates;
 				}
-				break;
-			case 'C':
-				while (!placed) {
-					if (replaceShipTypeC(ship)) {
-						placed = true;
-					}
-				}
-				break;
-			default:
-				break;
 			}
 		}
-	}
-
-	private boolean replaceShipTypeC(Ship ship) {
-		int rowY;
-		int colX;
-		Random rand = new Random();
-		rowY = rand.nextInt(height - 1);
-		colX = rand.nextInt(width - 1);
-
-		List<Coordinate> coordinates = new ArrayList<>();
-		coordinates.add(new Coordinate(colX,rowY));
-		coordinates.add(new Coordinate(colX+1,rowY));
-		coordinates.add(new Coordinate(colX,rowY+1));
-		coordinates.add(new Coordinate(colX+1,rowY+1));
-
-		for (Coordinate coordinate : coordinates) {
-		    // not on border
-			if (coordinate.getX()==0 || coordinate.getX()==width-1
-					|| coordinate.getY()==0 || coordinate.getY() == height-1) {
-				return false ;
-			}
-		    // value not is .
-			if(grid[coordinate.getX()][coordinate.getY()] != '.' ) {
-				return false ;
-			}
-		}
-		
-		ship.coordinates = coordinates;
-		
-		// draw
-		for (Coordinate coordinate : coordinates) {
-			grid[coordinate.getX()][coordinate.getY()] = ship.getType();
-		}
-		
-		return true;
-	}
-    
+	}    
 }
 
 

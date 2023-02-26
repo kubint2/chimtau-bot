@@ -48,11 +48,13 @@ public class BotPlayer {
 		this.ships = ships;
 
 		for (ShipRequest shipRequest : ships) {
-			this.shipMap.put(shipRequest.getType(), shipRequest.getQuantity());
+			this.shipEnemyMap.put(shipRequest.getType(), shipRequest.getQuantity());
 		}
 		
 		// init board
 		this.board = new int[width][height];
+		
+		this.boardEnemy = new int[width][height];
 	}
 
 	// implement 
@@ -60,8 +62,10 @@ public class BotPlayer {
     public Coordinate previousHit;
     public int typeCheck = 0 ; // 0: random , 1: typeA , 2: type B, 3: type C, >3 other 
     private Boolean vertical = null;
-    public Map<String, Integer> shipMap = new HashMap<>();
+    public Map<String, Integer> shipEnemyMap = new HashMap<>();
+	public int [][] boardEnemy ;
     
+    public List<Coordinate> coordinatesShotted = new ArrayList<>();
 
     public void resetCalculator() {
     	typeCheck = 0;
@@ -78,11 +82,15 @@ public class BotPlayer {
 			Coordinate Coordinate = makeRandomShot();
 			result.add(new int[] {Coordinate.getX(), Coordinate.getY()});
 		} else {
-			for (Coordinate coordinate : showTurns) {
-				result.add(new int[] {coordinate.getX(), coordinate.getY()});
-				if(--maxShots <= 0) {
-					break;
+			if(showTurns.size() == 2) {
+				for (Coordinate coordinate : showTurns) {
+					result.add(new int[] {coordinate.getX(), coordinate.getY()});
+					if(--maxShots <= 0) {
+						break;
+					}
 				}
+			} else {
+				result.add(new int[] {showTurns.get(0).getX(), showTurns.get(0).getY()});
 			}
 		}
 		//
@@ -94,7 +102,7 @@ public class BotPlayer {
 			typeCheck = 0;
 			// Random shot
 			List<Coordinate> shotsTurn = new ArrayList<>();
-			shotsTurn.add(makeRandomShot());
+			shotsTurn.add(this.getCoordinateMaxSore());
 			return shotsTurn;
 		} else if (hitCoordinateList.size() == 1) {
 			typeCheck = 1;
@@ -117,6 +125,11 @@ public class BotPlayer {
 			}
 
 			if (CollectionUtils.isNotEmpty(neightBour2point)) {
+				for (Coordinate coordinate : neightBour2point) {
+					coordinate.setScore(boardEnemy[coordinate.getX()][coordinate.getY()]);
+				}
+				neightBour2point.sort((o1, o2) -> o2.getScore() - o1.getScore());
+				
 				return neightBour2point;
 			} else {
 				typeCheck = 4;
@@ -142,7 +155,7 @@ public class BotPlayer {
 			} else {
 				vertical = null;
 				// 3 điểm không thẳng hàng -> tìm điểm góc vuông
-				Coordinate coordinateFourth = findFourthCoordinate(first, second, third);
+				Coordinate coordinateFourth = findFourthCoordinate(hitCoordinateList);
 				// Check valid coordinateFourth
 				if (isValidForShot(coordinateFourth)) {
 					neightBour3point.add(coordinateFourth);
@@ -153,6 +166,11 @@ public class BotPlayer {
 			}
 
 			if (CollectionUtils.isNotEmpty(neightBour3point)) {
+				for (Coordinate coordinate : neightBour3point) {
+					coordinate.setScore(boardEnemy[coordinate.getX()][coordinate.getY()]);
+				}
+				neightBour3point.sort((o1, o2) -> o2.getScore() - o1.getScore());
+				
 				return neightBour3point;
 			} else {
 				// Shot neightBour previousHit
@@ -168,6 +186,7 @@ public class BotPlayer {
 
 			if (first.getY() == second.getY() && first.getY() == third.getY()&& first.getY() == four.getY()) {
 				vertical = false;
+				// check board CV
 				Coordinate minCoordinateColX = hitCoordinateList.stream().min(Comparator.comparing(Coordinate::getX))
 						.orElseThrow(NoSuchElementException::new);
 				remainPoin = new Coordinate(minCoordinateColX.getX()+1, minCoordinateColX.getY()-1);
@@ -176,6 +195,7 @@ public class BotPlayer {
 				}
 			} else if (first.getX() == second.getX() && first.getX() == third.getX()&& first.getX() == four.getX()) {
 				vertical = true;
+				// check board CV
 				Coordinate minCoordinateRowY = hitCoordinateList.stream().min(Comparator.comparing(Coordinate::getY))
 						.orElseThrow(NoSuchElementException::new);
 				remainPoin = new Coordinate(minCoordinateRowY.getX() - 1, minCoordinateRowY.getY() + 1);
@@ -183,6 +203,8 @@ public class BotPlayer {
 					neightBour4point.add(remainPoin);
 				}
 			} else {
+				vertical = false;
+				
 				List<Coordinate> listCoordinateInline = removeNonCollinearCoordinates(hitCoordinateList);
 				if ((listCoordinateInline.get(0).getX() == listCoordinateInline.get(1).getX())
 						&& (listCoordinateInline.get(0).getX() == listCoordinateInline.get(2).getX())) {
@@ -203,6 +225,11 @@ public class BotPlayer {
 			}
 
 			if (CollectionUtils.isNotEmpty(neightBour4point)) {
+				for (Coordinate coordinate : neightBour4point) {
+					coordinate.setScore(boardEnemy[coordinate.getX()][coordinate.getY()]);
+				}
+				neightBour4point.sort((o1, o2) -> o2.getScore() - o1.getScore());
+				
 				return neightBour4point;
 			} else {
 				// Shot neightBour previousHit
@@ -224,6 +251,24 @@ public class BotPlayer {
         } while (board[x][y] != 0) ;
 
         return new Coordinate(x, y);
+    }
+    
+    public Coordinate getCoordinateMaxSore() {
+		List<Coordinate> coordinates = new ArrayList<>();
+        for (int y = 0; y < 8; y++) {
+            for (int x = 0; x < 20; x++) {
+            	coordinates.add(new Coordinate(x, y, boardEnemy[x][y]));
+                //System.out.print(boardEnemy[x][y] + "  ");
+            }
+        }
+		Coordinate maxScore = coordinates.stream().max(Comparator.comparing(Coordinate::getScore))
+				.orElseThrow(NoSuchElementException::new);
+		if (maxScore != null) {
+			 System.out.println("MaxScore: " + JsonUtil.objectToJson(maxScore));
+				return maxScore;
+		} else {
+			return makeRandomShot();
+		}
     }
     
     public List<Coordinate> makeShotNeighbors(Coordinate shot) {
@@ -260,9 +305,12 @@ public class BotPlayer {
         List<Coordinate> unshotNeighbors = new ArrayList<>();
         for (Coordinate neighbor : neighborCells) {
             if (this.isValidForShot(neighbor)) {
+            	// setScore
+            	neighbor.setScore(boardEnemy[neighbor.getX()][neighbor.getY()]);
                 unshotNeighbors.add(neighbor);
             }
         }
+        unshotNeighbors.sort((o1, o2) -> o2.getScore() - o1.getScore());
         return unshotNeighbors;
     }
     
@@ -288,14 +336,12 @@ public class BotPlayer {
     	Coordinate max;
     	Coordinate obj;
 		if (vertical) {
-			Coordinate minCoordinateRowY = hitList.stream().min(Comparator.comparing(Coordinate::getY))
-					.orElseThrow(NoSuchElementException::new);
-			Coordinate maxCoordinateRowY = hitList.stream().max(Comparator.comparing(Coordinate::getY))
-					.orElseThrow(NoSuchElementException::new);
+			int minRowY = hitList.stream().min(Comparator.comparing(Coordinate::getY))
+					.orElseThrow(NoSuchElementException::new).getX();
+			int maxRowY = hitList.stream().max(Comparator.comparing(Coordinate::getY))
+					.orElseThrow(NoSuchElementException::new).getY();
 
-			int minRowY = minCoordinateRowY.getY();
-			int maxRowY = maxCoordinateRowY.getY();
-			int colX = minCoordinateRowY.getX();
+			int colX = hitList.get(0).getX();
 			// validate
 			obj = new Coordinate(colX, minRowY - 1);
 			if (isValidForShot(obj)) {
@@ -306,14 +352,12 @@ public class BotPlayer {
 				neightBourTypeA.add(obj);
 			}
 		} else {
-			Coordinate minCoordinateColX = hitList.stream().min(Comparator.comparing(Coordinate::getX))
-					.orElseThrow(NoSuchElementException::new);
-			Coordinate maxCoordinateColX = hitList.stream().max(Comparator.comparing(Coordinate::getX))
-					.orElseThrow(NoSuchElementException::new);
+			int minColX = hitList.stream().min(Comparator.comparing(Coordinate::getX))
+					.orElseThrow(NoSuchElementException::new).getX();
+			int maxColX = hitList.stream().max(Comparator.comparing(Coordinate::getX))
+					.orElseThrow(NoSuchElementException::new).getY();
 
-        	int minColX = minCoordinateColX.getX();
-        	int maxColX = maxCoordinateColX.getX();
-        	int rowY = minCoordinateColX.getY();
+        	int rowY = hitList.get(0).getY();
         	// validate
 			obj = new Coordinate(minColX-1, rowY);
         	if (isValidForShot(obj)) {
@@ -326,39 +370,48 @@ public class BotPlayer {
 		}    	
     	return neightBourTypeA;
     }
-
-    public static Coordinate findFourthCoordinate(Coordinate first, Coordinate second, Coordinate third) {
-        int x4, y4;
-        if (first.getX() == second.getX()) {
-            x4 = third.getX();
-            y4 = first.getY() + third.getY() - second.getY();
-        } else {
-            x4 = first.getX() + third.getX() - second.getX();
-            y4 = third.getY();
+    
+    public static Coordinate findFourthCoordinate(List<Coordinate> hitList) {
+        if(hitList.size() != 3) {
+        	return null;
         }
-        Coordinate fourth = new Coordinate(x4, y4);
-        return fourth;
+        // A B
+        // C D
+		int minX = hitList.stream().min(Comparator.comparing(Coordinate::getX))
+				.orElseThrow(NoSuchElementException::new).getX();
+		int maxX = hitList.stream().max(Comparator.comparing(Coordinate::getX))
+				.orElseThrow(NoSuchElementException::new).getX();
+		int minY = hitList.stream().min(Comparator.comparing(Coordinate::getY))
+				.orElseThrow(NoSuchElementException::new).getY();
+		int maxY = hitList.stream().max(Comparator.comparing(Coordinate::getY))
+				.orElseThrow(NoSuchElementException::new).getY();
+		Coordinate C = new Coordinate (minX, minY);
+		if (!hitList.contains(C)) {
+			return C;
+		}
+		Coordinate B = new Coordinate (maxX, maxY);
+		if (!hitList.contains(B)) {
+			return B;
+		}
+		Coordinate A = new Coordinate (minX, maxY);
+		if (!hitList.contains(A)) {
+			return A;
+		}
+		Coordinate D = new Coordinate (maxX, minY);
+		if (!hitList.contains(D)) {
+			return D;
+		}
+        return null;
     }
     
-//    public static Coordinate findFourthCoordinate(Coordinate first, Coordinate second, Coordinate third) {
-//        // Tính trung bình cộng của các tọa độ
-//        int xAvg = (first.getX() + second.getX() + third.getX()) / 3;
-//        int yAvg = (first.getY() + second.getY() + third.getY()) / 3;
-//
-//        // Phản xạ tọa độ qua đường chéo của hình vuông
-//        int x4 = 2 * xAvg - third.getX();
-//        int y4 = 2 * yAvg - third.getY();
-//
-//        Coordinate fourth = new Coordinate(x4, y4);
-//        return fourth;
-//    }
-    
-    public static void main(String[] args) {
-        Coordinate A = new Coordinate(8, 4);
-        Coordinate B = new Coordinate(8, 5);
-        Coordinate C = new Coordinate(9, 5);
+    public static void main(String[] args) {	
+    	List<Coordinate> hitList = List.of(
+         new Coordinate(8, 4),
+         new Coordinate(8, 5),
+         new Coordinate(9, 5)
+        );
 
-        Coordinate D = findFourthCoordinate(A, B, C);
+        Coordinate D = findFourthCoordinate(hitList);
         System.out.println("D: x=" + D.getX() );
         System.out.println("D: y=" + D.getY() );
     }

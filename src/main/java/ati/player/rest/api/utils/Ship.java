@@ -4,9 +4,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 import ati.player.rest.api.entity.Coordinate;
-import ati.player.rest.api.entity.ShipData;
 
 public class Ship {
+	public static final String SHIP_CV = "CV";
+	public static final String SHIP_OR = "OR";
+	public static final String SHIP_DD = "DD";
+	public static final String SHIP_BB = "BB";
+	public static final String SHIP_CA = "CA";
+	
+	
+	
 	private char type;
     private int length;
     private boolean isVertical;
@@ -31,24 +38,24 @@ public class Ship {
     	this.typeDesc = typeDesc;
     	
 		switch (typeDesc) {
-		case "DD":
+		case SHIP_DD:
 			this.type = 'A';
 			this.length = 2;
 			break;
-		case "CV":
+		case SHIP_CA:
 			this.type = 'B';
-			this.length = 5;
-			break;
-		case "CA":
-			this.type = 'A';
 			this.length = 3;
 			break;
-		case "BB":
-			this.type = 'A';
+		case SHIP_BB:
+			this.type = 'C';
 			this.length = 4;
 			break;
-		case "OR":
-			this.type = 'C';
+		case SHIP_CV:
+			this.type = 'V';
+			this.length = 5;
+			break;
+		case SHIP_OR:
+			this.type = 'O';
 			this.length = 4;
 			break;
 		default:
