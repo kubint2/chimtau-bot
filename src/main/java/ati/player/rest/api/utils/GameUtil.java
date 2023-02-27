@@ -1,9 +1,13 @@
 package ati.player.rest.api.utils;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.List;
 
 import ati.player.rest.api.entity.Coordinate;
+import ati.player.rest.api.entity.EnemyPlayInfo;
 
 public class GameUtil {
     public static List<Coordinate> getCoordinateNeighbours(Coordinate coordinate, int boardWidth, int boardHeight) {
@@ -17,4 +21,30 @@ public class GameUtil {
 
         return neighborCells;
     }
+
+	public static void writeLogInfoTofile(String FilePath, EnemyPlayInfo enemyPlayInfo) throws Exception {
+		String content = JsonUtil.objectToJson(enemyPlayInfo);
+		File file = new File(FilePath);
+		if (!file.exists()) {
+			file.createNewFile();
+		}
+		FileWriter fw = new FileWriter(file.getAbsoluteFile());
+		BufferedWriter bw = new BufferedWriter(fw);
+		bw.write(content);
+		bw.close();
+		System.out.println("Done write log to " + FilePath);
+	}
+	
+//  public static EnemyPlayInfo readEnemyPlayInfoFile(String FilePath) throws Exception {
+//		String enemyPlayId = "enemyPlayId";
+//
+//		Path filePath = Path.of(FilePath);
+//		if (Files.exists(filePath)) {
+//			String content = Files.readString(filePath);
+//			EnemyPlayInfo enemyPlayInfo = (EnemyPlayInfo) JsonUtil.jsonToObject(content, EnemyPlayInfo.class);
+//			System.out.println(enemyPlayInfo);
+//			return enemyPlayInfo;
+//		}
+//		return null;
+//	}
 }

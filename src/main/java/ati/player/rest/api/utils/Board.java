@@ -19,7 +19,7 @@ public class Board {
     boolean flagCanPutOnBorder = false;
     boolean flagCanHaveNeighbour = false;
     int tryCountCheckNeghbour = 0;
-    private static final char DOT = '.';
+    public static final char DOT = '.';
     private static final int MAX_TRY_COUNT = 300;
     
     

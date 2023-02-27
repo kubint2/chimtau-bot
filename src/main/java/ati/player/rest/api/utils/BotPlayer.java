@@ -13,6 +13,7 @@ import java.util.Set;
 import org.apache.commons.collections.CollectionUtils;
 
 import ati.player.rest.api.entity.Coordinate;
+import ati.player.rest.api.entity.ShipData;
 import ati.player.rest.api.request.ShipRequest;
 
 public class BotPlayer {
@@ -26,8 +27,18 @@ public class BotPlayer {
 	public int maxShots;
 	public List<ShipRequest> ships;
 	
+	public String enemyPlayId;
+	public int[][] enemyShotBoard;
+	public int enemyShotNo = 0;
+	public char[][] enemyPlaceShipBoard;
 	
+	public List<ShipData> enemyShipData = new ArrayList(); 
 	
+	public int[][] myShotBoard;
+	public int myShotNo = 0;
+	public char[][] myPlaceShipBoard;
+
+
 	// private BotPlayer instance;
 
 	public BotPlayer() {
@@ -53,14 +64,14 @@ public class BotPlayer {
 		
 		// init board
 		this.board = new int[width][height];
-		
 		this.boardEnemy = new int[width][height];
+
 	}
 
 	// implement 
     public List<Coordinate> hitCoordinateList = new ArrayList<>();
     public Coordinate previousHit;
-    public int typeCheck = 0 ; // 0: random , 1: typeA , 2: type B, 3: type C, >3 other 
+    public int typeCheck = 0 ; // 0: random , 1:neigh bour, 2: typeA(DD,CA,BB), 3: type C(OR), 4: type B(CA), >5 other 
     private Boolean vertical = null;
     public Map<String, Integer> shipEnemyMap = new HashMap<>();
 	public int [][] boardEnemy ;
@@ -78,6 +89,7 @@ public class BotPlayer {
 
 	public List<int[]> getShotsTurnResult() {
 		List<int[]> result = new ArrayList<>();
+		flagGetMaxShot = false;
 		List<Coordinate> showTurns = this.getshotsTurn();
 		if(CollectionUtils.isEmpty(showTurns)) {
 			// return random shot
@@ -106,7 +118,7 @@ public class BotPlayer {
 		}
 		//
 		System.out.println("=== Hit List : " + JsonUtil.objectToJson(hitCoordinateList));
-		System.out.println("=== Shot Output : " + JsonUtil.objectToJson(showTurns));
+		System.out.println("=== Type Check: " + typeCheck  +"= Shots Output: " + JsonUtil.objectToJson(showTurns));
 		return result;
 	}
 	
@@ -122,6 +134,7 @@ public class BotPlayer {
 			// Shot neightBour previousHit
 			return makeShotNeighbors();
 		} else if (hitCoordinateList.size() == 2) {
+			typeCheck = 2;
 			flagGetMaxShot = true;
 
 			// Shot vertical or Not
@@ -131,11 +144,8 @@ public class BotPlayer {
 			List<Coordinate> neightBour2point = new ArrayList<>();
 			// check vertical
 			if (first.getY() == second.getY()) {
-				typeCheck = 2;
 				neightBour2point = getNeightBourTypeA(hitCoordinateList, false);
-
 			} else if (first.getX() == second.getX()) {
-				typeCheck = 3;
 				neightBour2point = getNeightBourTypeA(hitCoordinateList, true);
 			}
 
@@ -148,6 +158,8 @@ public class BotPlayer {
 			}
 
 		} else if (hitCoordinateList.size() == 3) {
+			typeCheck = 3;
+			
 			Coordinate first = hitCoordinateList.get(0);
 			Coordinate second = hitCoordinateList.get(1);
 			Coordinate third = hitCoordinateList.get(2);
@@ -184,6 +196,8 @@ public class BotPlayer {
 				return makeShotNeighbors();
 			}
 		} else if (hitCoordinateList.size() == 4) {
+			typeCheck = 4;
+			
 			Coordinate first = hitCoordinateList.get(0);
 			Coordinate second = hitCoordinateList.get(1);
 			Coordinate third = hitCoordinateList.get(2);
@@ -238,6 +252,7 @@ public class BotPlayer {
 				return makeShotNeighbors();
 			}
 		} else {
+			typeCheck = 5;
 			// Shot neightBour previousHit
 			return makeShotNeighbors();
 		}
@@ -264,12 +279,13 @@ public class BotPlayer {
     	if(coordinate != null && board[coordinate.getX()][coordinate.getY()] == 0) {
     		return coordinate;
     	}
-    	
 
 		List<Coordinate> coordinates = new ArrayList<>();
         for (int y = 0; y < 8; y++) {
             for (int x = 0; x < 20; x++) {
-            	coordinates.add(new Coordinate(x, y, boardEnemy[x][y]));
+            	if(board[x][y] == 0) {
+            		coordinates.add(new Coordinate(x, y, boardEnemy[x][y]));
+            	}
                 //System.out.print(boardEnemy[x][y] + "  ");
             }
         }
@@ -279,7 +295,7 @@ public class BotPlayer {
 			 System.out.println("MaxScore: " + JsonUtil.objectToJson(coordinate));
 				return coordinate;
 		}
-		
+
 		return makeRandomShot();
     }
     

@@ -1,20 +1,7 @@
-/**********************************************************************/
-/*                                                                    */
-/*      Copyright (C) NEC Asia Pte Ltd. 2020                          */
-/*                                                                    */
-/*      NEC CONFIDENTIAL AND PROPRIETARY                              */
-/*      All rights reserved by NEC Asia Pte Ltd.                      */
-/*      This program must be used solely for the purpose for which    */
-/*      it was furnished by NEC Asia Pte Ltd.   No part of this       */
-/*      program may be reproduced or disclosed to others, in any      */
-/*      form, without the prior written permission of NEC             */
-/*      Asia Pte Ltd.  Use of copyright notice dose not evidence      */
-/*      publication of the program.                                   */
-/*                                                                    */
-/**********************************************************************/
 package ati.player.rest.api.controller;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +25,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import ati.player.rest.api.entity.Coordinate;
+import ati.player.rest.api.entity.EnemyPlayInfo;
 import ati.player.rest.api.entity.ShipData;
 import ati.player.rest.api.entity.ShotData;
 import ati.player.rest.api.request.GameInviteRequest;
@@ -51,6 +39,7 @@ import ati.player.rest.api.response.GameTurnResult;
 import ati.player.rest.api.response.NotifyResult;
 import ati.player.rest.api.utils.Board;
 import ati.player.rest.api.utils.BotPlayer;
+import ati.player.rest.api.utils.GameUtil;
 import ati.player.rest.api.utils.JsonUtil;
 import ati.player.rest.api.utils.Ship;
 
@@ -61,17 +50,19 @@ public class BotServiceController {
 
 	private static final Logger logger = LogManager.getLogger(BotServiceController.class);	
 	
-	public static final String RESULT_HIT = "HIT";
+	private static final String RESULT_HIT = "HIT";
 
-	public static final String RESULT_MISS = "MISS";
+	private static final String RESULT_MISS = "MISS";
 	
-	public static final String BOT_ID = "chimtau";
+	private static final String BOT_ID = "chimtau";
 	
-	public static final int TIME_OUT = 5000;
+	// public static final int TIME_OUT = 5000;
+	private static final int TIME_OUT = 400;
+	
+	private static final String PATH = "//home//binhlv//Desktop//Hackathon//enemy_info//";
 
 	private Map<String, BotPlayer> botPlayerMap = new HashMap<>();
-	
-	
+
 	@RequestMapping(value = "/test", method = RequestMethod.GET)
 	public String test() throws Exception {
 		return "Welcome to RESTful API Services!";
@@ -143,6 +134,27 @@ public class BotServiceController {
 			}
 
 			response.setShips(shipDatas);
+
+			// for write log
+			if (!botPlayer.player1.equals(BOT_ID)) {
+				botPlayer.enemyPlayId = botPlayer.player1;
+			} else {
+				botPlayer.enemyPlayId = botPlayer.player2;
+			}
+			botPlayer.enemyShotBoard = new int[botPlayer.boardWidth][botPlayer.boardHeight];
+			botPlayer.myShotBoard = new int[botPlayer.boardWidth][botPlayer.boardHeight];
+			
+			botPlayer.myPlaceShipBoard = new char[botPlayer.boardWidth][botPlayer.boardHeight];
+			botPlayer.enemyPlaceShipBoard = new char[botPlayer.boardWidth][botPlayer.boardHeight];
+	        for (int i = 0; i < botPlayer.boardWidth; i++) {
+	            Arrays.fill(botPlayer.myPlaceShipBoard[i], Board.DOT);
+	            Arrays.fill(botPlayer.enemyPlaceShipBoard[i], Board.DOT);
+	        }
+			for (Ship ship : board.getShips()) {
+				for (Coordinate coordinate : ship.coordinates) {
+					botPlayer.myPlaceShipBoard[coordinate.getX()][coordinate.getY()] = ship.getType();
+				}
+			} 
 		} catch (Exception e) {
 			e.printStackTrace();
 			logger.error(e);
@@ -199,6 +211,8 @@ public class BotServiceController {
 					int[] coordinate = shotData.getCoordinate();
 					int x = coordinate[0];
 					int y = coordinate[1];
+					botPlayer.myShotBoard[x][y] = botPlayer.myShotNo++; // for write log
+					
 					Coordinate coordinateObj = new Coordinate(x, y);
 					
 					if(shotData.getStatus().equalsIgnoreCase(RESULT_HIT)) {
@@ -208,7 +222,8 @@ public class BotServiceController {
 						botPlayer.board[x][y]=2;
 						
 						calculateProbabilityTask = true;
-						botPlayer.boardEnemy[x][y]=0;
+						
+						botPlayer.enemyPlaceShipBoard[x][y] = 'A'; // for write log
 					} else {
 						botPlayer.board[x][y]=1;
 						botPlayer.coordinatesShotted.add(coordinateObj);
@@ -239,7 +254,22 @@ public class BotServiceController {
 				if(calculateProbabilityTask) {
 					calculateProbailityTask(botPlayer, TIME_OUT);
 				}
-			} 
+			} else {
+				// for write log enemy
+				List<ShotData> shotResult = gameNotifyReq.getShots();
+				for (ShotData shotData : shotResult) {
+					int[] coordinate = shotData.getCoordinate();
+					int x = coordinate[0];
+					int y = coordinate[1];
+					botPlayer.enemyShotBoard[x][y] = botPlayer.enemyShotNo++;
+				}
+				
+				if (CollectionUtils.isNotEmpty(gameNotifyReq.getSunkShips())) {
+					for (ShipData shipData : gameNotifyReq.getSunkShips()) {
+						botPlayer.enemyShipData.add(shipData);
+					}
+				}
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
 			logger.error(e);
@@ -278,6 +308,22 @@ public class BotServiceController {
 
 			botPlayer.winner = gameOverReq.getWinner();
 			botPlayer.loser = gameOverReq.getLoser();
+			
+			// write log
+			
+			
+			EnemyPlayInfo enemyInfo = new EnemyPlayInfo();
+			enemyInfo.setEnemyPlayId(botPlayer.enemyPlayId);
+
+			enemyInfo.setEnemyShotBoard(botPlayer.enemyShotBoard);
+			enemyInfo.setMyPlaceShipBoard(botPlayer.myPlaceShipBoard);
+			
+			enemyInfo.setEnemyPlaceShipBoard(botPlayer.enemyPlaceShipBoard);
+			enemyInfo.setMyShotBoard(botPlayer.myShotBoard);
+			enemyInfo.setEnemyShipData(botPlayer.enemyShipData);
+
+			String filePath = PATH + enemyInfo.getEnemyPlayId() + "_" + sessionID + ".log";
+			GameUtil.writeLogInfoTofile(filePath, enemyInfo);
 		} catch (Exception e) {
 			e.printStackTrace();
 			logger.error(e);
@@ -296,5 +342,7 @@ public class BotServiceController {
 		System.out.println("Response: botPlayer" + JsonUtil.objectToJson(botPlayer));
 		return new ResponseEntity<BotPlayer>(botPlayer, HttpStatus.OK);
 	}
+	
+
 	
 }

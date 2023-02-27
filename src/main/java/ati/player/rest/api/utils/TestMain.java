@@ -16,6 +16,7 @@ import ati.player.rest.api.entity.Coordinate;
 
 public class TestMain {
 
+
 	public static void main1(String[] args) throws InterruptedException {
 		
 		while (true) {
@@ -106,7 +107,7 @@ public class TestMain {
 	}
 	
 	
-	public static void main(String[] args) throws InterruptedException {
+	public static void main9(String[] args) throws InterruptedException {
 		ScheduledExecutorService executor = Executors.newScheduledThreadPool(2);
 		 Map<String, Integer> shipEnemyMap = new HashMap<>();
 		 shipEnemyMap.put(Ship.SHIP_BB, 2);

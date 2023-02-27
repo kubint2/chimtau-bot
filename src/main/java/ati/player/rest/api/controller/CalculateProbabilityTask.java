@@ -49,12 +49,17 @@ public class CalculateProbabilityTask implements Runnable
 			}
 			
 			
+			boolean flagContainHitShotted = true;
 			if (CollectionUtils.isNotEmpty(coordinatesHitShotted)) {
 				for (Coordinate coordinateHitShotted : coordinatesHitShotted) {
 					if (!coordinates.contains(coordinateHitShotted)) {
-						continue;
+						flagContainHitShotted = false;
+						break;
 					}
 				}
+			}
+			if (!flagContainHitShotted) {
+				continue;
 			}
 			
 //			board.print();
