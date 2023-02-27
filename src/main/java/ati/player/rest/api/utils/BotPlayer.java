@@ -89,11 +89,7 @@ public class BotPlayer {
 					coordinate.setScore(boardEnemy[coordinate.getX()][coordinate.getY()]);
 				}
 				showTurns.sort((o1, o2) -> o2.getScore() - o1.getScore());
-				
-				// print
-				System.out.println("=== Hit List : " + JsonUtil.objectToJson(hitCoordinateList));
-				System.out.println("=== Shot Output : " + JsonUtil.objectToJson(showTurns));
-				
+
 				if (!flagGetMaxShot) {
 					result.add(new int[] { showTurns.get(0).getX(), showTurns.get(0).getY() });
 				} else {
@@ -109,6 +105,8 @@ public class BotPlayer {
 			}
 		}
 		//
+		System.out.println("=== Hit List : " + JsonUtil.objectToJson(hitCoordinateList));
+		System.out.println("=== Shot Output : " + JsonUtil.objectToJson(showTurns));
 		return result;
 	}
 	
@@ -341,24 +339,24 @@ public class BotPlayer {
     	}
     }
     
-    public List<Coordinate> getNeightBourTypeA(List<Coordinate> hitList, boolean vertical) {
+    public List<Coordinate> getNeightBourTypeA(List<Coordinate> hitList, boolean sameX) {
     	List<Coordinate> neightBourTypeA = new ArrayList<>();
     	Coordinate min;
     	Coordinate max;
     	Coordinate obj;
-		if (vertical) {
+		if (sameX) {
 			int minRowY = hitList.stream().min(Comparator.comparing(Coordinate::getY))
-					.orElseThrow(NoSuchElementException::new).getX();
+					.orElseThrow(NoSuchElementException::new).getY();
 			int maxRowY = hitList.stream().max(Comparator.comparing(Coordinate::getY))
 					.orElseThrow(NoSuchElementException::new).getY();
 
 			int colX = hitList.get(0).getX();
 			// validate
-			obj = new Coordinate(colX, minRowY - 1);
+			obj = new Coordinate(colX, minRowY-1);
 			if (isValidForShot(obj)) {
 				neightBourTypeA.add(obj);
 			}
-			obj = new Coordinate(colX, maxRowY + 1);
+			obj = new Coordinate(colX, maxRowY+1);
 			if (isValidForShot(obj)) {
 				neightBourTypeA.add(obj);
 			}

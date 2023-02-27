@@ -95,7 +95,7 @@ public class BotServiceController {
 			response.setSuccess(true);
 
 			//
-			calculateProbailityTask(botPlayer, TIME_OUT);
+			calculateProbailityTask(botPlayer, 2000);
 		} catch (Exception e) {
 			e.printStackTrace();
 			logger.error(e);
@@ -200,7 +200,6 @@ public class BotServiceController {
 					int x = coordinate[0];
 					int y = coordinate[1];
 					Coordinate coordinateObj = new Coordinate(x, y);
-					botPlayer.coordinatesShotted.add(coordinateObj);
 					
 					if(shotData.getStatus().equalsIgnoreCase(RESULT_HIT)) {
 						if (!botPlayer.hitCoordinateList.contains(coordinateObj)) {
@@ -208,10 +207,11 @@ public class BotServiceController {
 						}
 						botPlayer.board[x][y]=2;
 						
-						calculateProbabilityTask = false;
+						calculateProbabilityTask = true;
 						botPlayer.boardEnemy[x][y]=0;
 					} else {
 						botPlayer.board[x][y]=1;
+						botPlayer.coordinatesShotted.add(coordinateObj);
 						calculateProbabilityTask = true;
 					}
 				}
@@ -225,9 +225,10 @@ public class BotServiceController {
 							botPlayer.shipEnemyMap.put(shipData.getType(), quanty);
 						}
 						for (int[] coordinate : shipData.getCoordinates()) {
-							int x = coordinate[0];
-							int y = coordinate[1];
-							botPlayer.hitCoordinateList.remove(new Coordinate(x, y));
+							Coordinate coordinateObj = new Coordinate(coordinate[0], coordinate[1]);
+
+							botPlayer.hitCoordinateList.remove(coordinateObj);
+							botPlayer.coordinatesShotted.add(coordinateObj);
 							botPlayer.resetCalculator();
 						}
 					}
@@ -249,7 +250,7 @@ public class BotServiceController {
 
 	private void calculateProbailityTask(BotPlayer botPlayer , int timeOut) throws InterruptedException {
 		CalculateProbabilityTask task = new CalculateProbabilityTask(botPlayer.boardWidth,
-				botPlayer.boardHeight, botPlayer.coordinatesShotted, botPlayer.shipEnemyMap);
+				botPlayer.boardHeight, botPlayer.coordinatesShotted, botPlayer.hitCoordinateList, botPlayer.shipEnemyMap);
 
 		ScheduledExecutorService executor = Executors.newScheduledThreadPool(2);
 		Future<?> future = executor.submit(task);
