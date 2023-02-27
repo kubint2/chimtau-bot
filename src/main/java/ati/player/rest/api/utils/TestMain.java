@@ -1,5 +1,7 @@
 package ati.player.rest.api.utils;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -13,10 +15,74 @@ import java.util.concurrent.TimeUnit;
 
 import ati.player.rest.api.controller.CalculateProbabilityTask;
 import ati.player.rest.api.entity.Coordinate;
+import ati.player.rest.api.entity.EnemyPlayInfo;
 
 public class TestMain {
 
+	private static final String PATH = "//home//binhlv//Desktop//Hackathon//enemy_info//";
+	private static int height =8;
+	private static int width  =20;
+	
+	public static void main(String[] args) throws Exception {
+		String myPlayId = "chimtau";
+		String enemyPlayId = "BAOTHU";
+		String tokenId = "";
+		// Path filePath = Path.of(PATH + enemyPlayId + "_" + tokenId + ".log");
+		EnemyPlayInfo EnemyPlayInfo = readEnemyPlayInfoFile(PATH + "BAOTHU_4c6f79ca-5956-45a6-821e-440355fa3a85.log");
 
+		System.out.println("===== ENEMY BOARD " + enemyPlayId);
+		print(EnemyPlayInfo.getEnemyPlaceShipBoard());
+
+		System.out.println("===== My Shot Board " + myPlayId);
+		print(EnemyPlayInfo.getMyShotBoard());
+
+		System.out.println("===== My Board " + myPlayId);
+		print(EnemyPlayInfo.getMyShotBoard());
+		
+		System.out.println("===== ENEMY Shot Board " + myPlayId);
+		print(EnemyPlayInfo.getEnemyShotBoard());
+		
+		System.out.println("===== Enemy List Ship " + enemyPlayId);
+		System.out.println(EnemyPlayInfo.getEnemyShipData());
+		
+		// System.out.println(JsonUtil.objectToJson(EnemyPlayInfo));
+
+	}
+	
+    public static void print(int [][] grid) {
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                System.out.print(grid[x][y] + "\t");
+            }
+            System.out.println();
+        }
+        System.out.println("=====================");
+    }
+    
+    public static void print(char [][] grid) {
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                System.out.print(grid[x][y] + "\t");
+            }
+            System.out.println();
+        }
+        System.out.println("=====================");
+    }
+	
+  public static EnemyPlayInfo readEnemyPlayInfoFile(String FilePath) throws Exception {
+		String enemyPlayId = "enemyPlayId";
+
+		Path filePath = Path.of(FilePath);
+		if (Files.exists(filePath)) {
+			String content = Files.readString(filePath);
+			EnemyPlayInfo enemyPlayInfo = (EnemyPlayInfo) JsonUtil.jsonToObject(content, EnemyPlayInfo.class);
+			System.out.println(enemyPlayInfo);
+			return enemyPlayInfo;
+		}
+		return null;
+	}
+	
+	
 	public static void main1(String[] args) throws InterruptedException {
 		
 		while (true) {
