@@ -23,6 +23,9 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import java.io.File;
+import java.io.FileWriter;
+
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.collections.CollectionUtils;
@@ -239,7 +242,17 @@ public class BotServiceController {
 				if(calculateProbabilityTask) {
 					calculateProbailityTask(botPlayer, TIME_OUT);
 				}
-			} 
+			} else {
+				String path = "logs/" + gameNotifyReq.getPlayerId() + ".log";
+				File file = new File(path);
+				if (!file.exists()) {
+					file.createNewFile();
+				}
+				FileWriter fileWriter = new FileWriter(file);
+				fileWriter.write(JsonUtil.objectToJson(gameNotifyReq.getShots()));
+				fileWriter.close();
+				
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
 			logger.error(e);

@@ -25,6 +25,7 @@ public class BotPlayer {
 	public String loser;
 	public int maxShots;
 	public List<ShipRequest> ships;
+	public List<Coordinate> neighborCoordinateList;
 	
 	
 	
@@ -245,8 +246,20 @@ public class BotPlayer {
 	}
     
     public Coordinate makeRandomShot() {
+    	int x, y;
+    	int size = 0;
+		do {
+			size = neighborCoordinateList.size();
+			Coordinate coordinate = neighborCoordinateList.get(0);
+			x = coordinate.getX();
+			y = coordinate.getY();
+			neighborCoordinateList.remove(0);
+		} while (size != 0 && board[x][y] != 0);
+		
+		if (board[x][y] == 0) {
+			return new Coordinate(x, y);
+		}
         Random random = new Random();
-        int x, y;
         do {
         	x = random.nextInt(boardWidth);
             y = random.nextInt(boardHeight);
@@ -318,6 +331,7 @@ public class BotPlayer {
         for (Coordinate neighbor : neighborCells) {
             if (this.isValidForShot(neighbor)) {
                 unshotNeighbors.add(neighbor);
+                neighborCoordinateList.add(neighbor);
             }
         }
         return unshotNeighbors;
