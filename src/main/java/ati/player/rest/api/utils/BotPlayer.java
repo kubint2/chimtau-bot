@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -42,6 +43,8 @@ public class BotPlayer {
 
 	private static final int TIME_OUT = 500;
 	public int timeOut = TIME_OUT;
+	
+
 	// private BotPlayer instance;
 
 	public BotPlayer() {
@@ -63,6 +66,7 @@ public class BotPlayer {
 
 		for (ShipRequest shipRequest : ships) {
 			this.shipEnemyMap.put(shipRequest.getType(), shipRequest.getQuantity());
+			this.shipRemainCount+=shipRequest.getQuantity();
 		}
 		
 		// init board
@@ -77,6 +81,8 @@ public class BotPlayer {
     public int typeCheck = 0 ; // 0: random , 1:neigh bour, 2: typeA(DD,CA,BB), 3: type C(OR), 4: type B(CA), >5 other 
     private Boolean vertical = null;
     public Map<String, Integer> shipEnemyMap = new HashMap<>();
+	public int shipRemainCount;
+
 	public int [][] boardEnemy ;
     public List<Coordinate> priorityShotsList = new ArrayList<>();
     
@@ -96,14 +102,13 @@ public class BotPlayer {
 		
 		// main
 		List<Coordinate> showTurns = this.getshotsTurn();
-		
-		
+
 		if(CollectionUtils.isEmpty(showTurns)) {
 			// return random shot
 			Coordinate Coordinate = makeSmartRandomShot();
 			result.add(new int[] {Coordinate.getX(), Coordinate.getY()});
 		} else {
-			// remove dupplicate value if exist
+			// remove duplicate value if exist
 			showTurns = showTurns.stream().distinct().collect(Collectors.toList());
 			// add score
 			for (Coordinate coordinate : showTurns) {
@@ -112,15 +117,22 @@ public class BotPlayer {
 			// order
 			showTurns.sort((o1, o2) -> o2.getScore() - o1.getScore());
 			
-			if (showTurns.size() >= this.maxShots) {// if (showTurns.size() >= 2) {
-				if (!flagGetMaxShot) {
-					result.add(new int[] { showTurns.get(0).getX(), showTurns.get(0).getY() });
-				} else {
+			if (this.maxShots >= 2 && showTurns.size() >= 2) {// if (showTurns.size() >= 2) {
+				if (flagGetMaxShot || (showTurns.size() >= this.maxShots && this.maxShots >= 3)
+						|| !(shipEnemyMap.containsKey(Ship.SHIP_OR) || shipEnemyMap.containsKey(Ship.SHIP_BB)
+								|| shipEnemyMap.containsKey(Ship.SHIP_CV))) {
 					for (Coordinate coordinate : showTurns) {
 						result.add(new int[] {coordinate.getX(), coordinate.getY()});
 						if(--maxShots <= 0) {
 							break;
 						}
+					}
+				} else {
+					if (shipEnemyMap.size() < 2) {
+						
+						
+					} else {
+						result.add(new int[] { showTurns.get(0).getX(), showTurns.get(0).getY() });
 					}
 				}
 			} else {
@@ -146,7 +158,6 @@ public class BotPlayer {
 			return makeShotNeighbors();
 		} else if (hitCoordinateList.size() == 2) {
 			typeCheck = 2;
-			flagGetMaxShot = true;
 
 			// Shot vertical or Not
 			Coordinate first = hitCoordinateList.get(0);
@@ -154,10 +165,26 @@ public class BotPlayer {
 
 			List<Coordinate> neightBour2point = new ArrayList<>();
 			// check vertical
-			if (first.getY() == second.getY()) {
-				neightBour2point = getNeightBourTypeA(hitCoordinateList, false);
-			} else if (first.getX() == second.getX()) {
-				neightBour2point = getNeightBourTypeA(hitCoordinateList, true);
+			boolean isVetical = (first.getX() == second.getX());
+			if (shipEnemyMap.containsKey(Ship.SHIP_CA) || shipEnemyMap.containsKey(Ship.SHIP_BB)
+					|| shipEnemyMap.containsKey(Ship.SHIP_CV)) {
+				flagGetMaxShot = true;
+				neightBour2point = getNeightBourTypeA(hitCoordinateList, isVetical);
+			} else {
+				List<Coordinate> unshotNeighbors = makeShotNeighbors();
+				Iterator<Coordinate> unshotNeighborIters = unshotNeighbors.iterator();
+				while (unshotNeighborIters.hasNext()) {
+					Coordinate obj = unshotNeighborIters.next(); // must be called before you can call i.remove()
+					if (isVetical) {
+						if (obj.getX() == first.getX()) {
+							unshotNeighborIters.remove();
+						}
+					} else {
+						if (obj.getY() == first.getY()) {
+							unshotNeighborIters.remove();
+						}
+					}
+				}
 			}
 
 			if (CollectionUtils.isNotEmpty(neightBour2point)) {
@@ -166,7 +193,7 @@ public class BotPlayer {
 				// Shot neightBour previousHit
 				List<Coordinate> unshotNeighbors =  makeShotNeighbors();
 				if(unshotNeighbors.size()==3) {
-					if (shipEnemyMap.containsKey("OR")) {
+					if (shipEnemyMap.containsKey(Ship.SHIP_OR)) {
 						Coordinate coordinateA = unshotNeighbors.get(0);
 						Coordinate coordinateB = unshotNeighbors.get(1);
 						Coordinate coordinateC = unshotNeighbors.get(2);
@@ -178,10 +205,6 @@ public class BotPlayer {
 							unshotNeighbors.remove(coordinateA);
 						}
 						flagGetMaxShot = true;
-					} else {
-						// check type CV
-						
-						
 					}
 				}
 				
@@ -386,12 +409,12 @@ public class BotPlayer {
     	}
     }
     
-    public List<Coordinate> getNeightBourTypeA(List<Coordinate> hitList, boolean sameX) {
+    public List<Coordinate> getNeightBourTypeA(List<Coordinate> hitList, boolean isVetical) {
     	List<Coordinate> neightBourTypeA = new ArrayList<>();
     	Coordinate min;
     	Coordinate max;
     	Coordinate obj;
-		if (sameX) {
+		if (isVetical) {
 			int minRowY = hitList.stream().min(Comparator.comparing(Coordinate::getY))
 					.orElseThrow(NoSuchElementException::new).getY();
 			int maxRowY = hitList.stream().max(Comparator.comparing(Coordinate::getY))
@@ -460,16 +483,25 @@ public class BotPlayer {
         return null;
     }
     
-    public static void main(String[] args) {	
-    	List<Coordinate> hitList = List.of(
-         new Coordinate(8, 4),
-         new Coordinate(8, 5),
-         new Coordinate(9, 5)
-        );
+    public static void main(String[] args) throws Exception {
+    	List<Coordinate> hitList = new ArrayList<>();
+//    			List.of(
+//         new Coordinate(8, 4),
+//         new Coordinate(8, 5),
+//         new Coordinate(9, 5)
+//        );
+    	hitList.add(new Coordinate(8, 4));
+    	hitList.add(new Coordinate(8, 5));
+    	hitList.add(new Coordinate(9, 5));
 
-        Coordinate D = findFourthCoordinate(hitList);
-        System.out.println("D: x=" + D.getX() );
-        System.out.println("D: y=" + D.getY() );
+		Iterator<Coordinate> unshotNeighborIters = hitList.iterator();
+		while (unshotNeighborIters.hasNext()) {
+			Coordinate obj = unshotNeighborIters.next(); // must be called before you can call i.remove()
+			 if(obj.getX() == 8) {
+				 unshotNeighborIters.remove();
+			 }
+		}
+		System.out.println(JsonUtil.objectToJson(hitList));
     }
     
     public static Coordinate findSquareCorner(List<Coordinate> coordinates) {

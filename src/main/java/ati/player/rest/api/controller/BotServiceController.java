@@ -252,7 +252,7 @@ public class BotServiceController {
 				// in case sunk ship data or [ ]
 				if(CollectionUtils.isNotEmpty(gameNotifyReq.getSunkShips())) {
 					calculateProbabilityTask = true;
-
+					botPlayer.shipRemainCount--;
 					for (ShipData shipData : gameNotifyReq.getSunkShips()) {
 						if(botPlayer.shipEnemyMap.containsKey(shipData.getType())) {
 							Integer quanty = botPlayer.shipEnemyMap.get(shipData.getType()) - 1;
