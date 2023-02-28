@@ -10,12 +10,10 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import java.io.File;
-import java.io.FileWriter;
-
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.cxf.common.util.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.http.HttpStatus;
@@ -29,6 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import ati.player.rest.api.entity.Coordinate;
 import ati.player.rest.api.entity.EnemyPlayInfo;
+import ati.player.rest.api.entity.GameConfig;
 import ati.player.rest.api.entity.ShipData;
 import ati.player.rest.api.entity.ShotData;
 import ati.player.rest.api.request.GameInviteRequest;
@@ -60,9 +59,7 @@ public class BotServiceController {
 	private static final String BOT_ID = "chimtau";
 	
 	// public static final int TIME_OUT = 5000;
-	private static final int TIME_OUT = 400;
-	
-	private static final String PATH = "//home//binhlv//Desktop//Hackathon//enemy_info//";
+	private static final int TIME_OUT = 500;
 
 	private Map<String, BotPlayer> botPlayerMap = new HashMap<>();
 
@@ -109,13 +106,28 @@ public class BotServiceController {
 		try {
 			String sessionID = request.getHeader("X-SESSION-ID");
 			BotPlayer botPlayer = botPlayerMap.get(sessionID);
-			
-			// botPlayer = ChimtauPlayer.getInstance();
+
 			botPlayer.player1 = gamePlaceShipsRequest.getPlayer1();
 			botPlayer.player2 = gamePlaceShipsRequest.getPlayer2();
 
+			if (!botPlayer.player1.equals(BOT_ID)) {
+				botPlayer.enemyPlayId = botPlayer.player1;
+			} else {
+				botPlayer.enemyPlayId = botPlayer.player2;
+			}
+			// for readConfig
+			GameConfig gameConfig = GameUtil.readConfiguration(botPlayer.enemyPlayId) ;
+			if(gameConfig== null) gameConfig = new GameConfig();
+
+			List<Coordinate> coordinatesShotted = new ArrayList<>();
+			if(CollectionUtils.isNotEmpty(gameConfig.getIgnorePlaceShip())) {
+				for (int[] coordinateArr : gameConfig.getIgnorePlaceShip()) {
+					coordinatesShotted.add(new Coordinate(coordinateArr[0], coordinateArr[1]));
+				}
+			}
+
 			// set response
-			Board board = new Board(botPlayer.boardWidth, botPlayer.boardHeight);
+			Board board = new Board(botPlayer.boardWidth, botPlayer.boardHeight, coordinatesShotted);
 			for (ShipRequest shipReq : botPlayer.ships) {
 				int quantity = shipReq.getQuantity();
 				while(quantity > 0) {
@@ -123,6 +135,10 @@ public class BotServiceController {
 					quantity--;
 				}
 			}
+			
+			board.flagPlaceVertical = gameConfig.getFlagPlaceVertical();
+			board.flagCanHaveNeighbour = gameConfig.getFlagCanHaveNeighbour();
+			board.flagCanPutOnBorder = gameConfig.getFlagCanPutOnBorder();
 			board.placeShipsRandomly();
 			board.print();
 			
@@ -139,13 +155,8 @@ public class BotServiceController {
 			response.setShips(shipDatas);
 
 			// for write log
-			if (!botPlayer.player1.equals(BOT_ID)) {
-				botPlayer.enemyPlayId = botPlayer.player1;
-			} else {
-				botPlayer.enemyPlayId = botPlayer.player2;
-			}
-			botPlayer.enemyShotBoard = new int[botPlayer.boardWidth][botPlayer.boardHeight];
-			botPlayer.myShotBoard = new int[botPlayer.boardWidth][botPlayer.boardHeight];
+			botPlayer.enemyShotNo2d = new int[botPlayer.boardWidth][botPlayer.boardHeight];
+			botPlayer.myShotNoArr2d = new int[botPlayer.boardWidth][botPlayer.boardHeight];
 			
 			botPlayer.myPlaceShipBoard = new char[botPlayer.boardWidth][botPlayer.boardHeight];
 			botPlayer.enemyPlaceShipBoard = new char[botPlayer.boardWidth][botPlayer.boardHeight];
@@ -157,7 +168,8 @@ public class BotServiceController {
 				for (Coordinate coordinate : ship.coordinates) {
 					botPlayer.myPlaceShipBoard[coordinate.getX()][coordinate.getY()] = ship.getType();
 				}
-			} 
+			}
+
 		} catch (Exception e) {
 			e.printStackTrace();
 			logger.error(e);
@@ -206,15 +218,16 @@ public class BotServiceController {
 			response.setSuccess(true);
 			String sessionID = request.getHeader("X-SESSION-ID");
 			BotPlayer botPlayer = botPlayerMap.get(sessionID);
-			boolean calculateProbabilityTask =  false;
 
 			if(gameNotifyReq.getPlayerId().equalsIgnoreCase(BOT_ID)) {
+				boolean calculateProbabilityTask =  false;
+				botPlayer.myShotNo++; // for write log
 				List<ShotData> shotResult = gameNotifyReq.getShots();
 				for (ShotData shotData : shotResult) {
 					int[] coordinate = shotData.getCoordinate();
 					int x = coordinate[0];
 					int y = coordinate[1];
-					botPlayer.myShotBoard[x][y] = botPlayer.myShotNo++; // for write log
+					botPlayer.myShotNoArr2d[x][y] = botPlayer.myShotNo; // for write log
 					
 					Coordinate coordinateObj = new Coordinate(x, y);
 					
@@ -226,7 +239,7 @@ public class BotServiceController {
 						
 						calculateProbabilityTask = true;
 						
-						botPlayer.enemyPlaceShipBoard[x][y] = 'A'; // for write log
+						botPlayer.enemyPlaceShipBoard[x][y] = 'X'; // for write log
 					} else {
 						botPlayer.board[x][y]=1;
 						botPlayer.coordinatesShotted.add(coordinateObj);
@@ -242,12 +255,40 @@ public class BotServiceController {
 							Integer quanty = botPlayer.shipEnemyMap.get(shipData.getType()) - 1;
 							botPlayer.shipEnemyMap.put(shipData.getType(), quanty);
 						}
+
 						for (int[] coordinate : shipData.getCoordinates()) {
 							Coordinate coordinateObj = new Coordinate(coordinate[0], coordinate[1]);
 
 							botPlayer.hitCoordinateList.remove(coordinateObj);
 							botPlayer.coordinatesShotted.add(coordinateObj);
-							botPlayer.resetCalculator();
+						}
+
+						botPlayer.resetCalculator();
+						
+						// for write log
+						botPlayer.enemyShipData.add(shipData);
+						char typeChar = 'o';
+						switch (shipData.getType()) {
+						case Ship.SHIP_DD:
+							typeChar= 'A';
+							break;
+						case Ship.SHIP_CA:
+							typeChar = 'B';
+							break;
+						case Ship.SHIP_BB:
+							typeChar = 'C';
+							break;
+						case Ship.SHIP_CV:
+							typeChar = 'V';
+							break;
+						case Ship.SHIP_OR:
+							typeChar = 'O';
+							break;
+						default:
+							typeChar = 'X';
+						}
+						for (int[] coordinateArr : shipData.getCoordinates()) {
+							botPlayer.enemyPlaceShipBoard[coordinateArr[0]][coordinateArr[1]] = typeChar;
 						}
 					}
 				}
@@ -258,30 +299,16 @@ public class BotServiceController {
 					calculateProbailityTask(botPlayer, TIME_OUT);
 				}
 			} else {
+				botPlayer.enemyShotNo++; // for write log
 				// for write log enemy
 				List<ShotData> shotResult = gameNotifyReq.getShots();
 				for (ShotData shotData : shotResult) {
 					int[] coordinate = shotData.getCoordinate();
 					int x = coordinate[0];
 					int y = coordinate[1];
-					botPlayer.enemyShotBoard[x][y] = botPlayer.enemyShotNo++;
+					botPlayer.enemyShotNo2d[x][y] = botPlayer.enemyShotNo;
 				}
 				
-				if (CollectionUtils.isNotEmpty(gameNotifyReq.getSunkShips())) {
-					for (ShipData shipData : gameNotifyReq.getSunkShips()) {
-						botPlayer.enemyShipData.add(shipData);
-					}
-				}
-
-//				String path = "logs/" + gameNotifyReq.getPlayerId() + ".log";
-//				File file = new File(path);
-//				if (!file.exists()) {
-//					file.createNewFile();
-//				}
-//				FileWriter fileWriter = new FileWriter(file);
-//				fileWriter.write(JsonUtil.objectToJson(gameNotifyReq.getShots()));
-//				fileWriter.close();
-
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -323,20 +350,27 @@ public class BotServiceController {
 			botPlayer.loser = gameOverReq.getLoser();
 			
 			// write log
-			
-			
-			EnemyPlayInfo enemyInfo = new EnemyPlayInfo();
-			enemyInfo.setEnemyPlayId(botPlayer.enemyPlayId);
+			if(!StringUtils.isEmpty(botPlayer.enemyPlayId)) {
+				EnemyPlayInfo enemyInfo = new EnemyPlayInfo();
+				enemyInfo.setEnemyPlayId(botPlayer.enemyPlayId);
 
-			enemyInfo.setEnemyShotBoard(botPlayer.enemyShotBoard);
-			enemyInfo.setMyPlaceShipBoard(botPlayer.myPlaceShipBoard);
-			
-			enemyInfo.setEnemyPlaceShipBoard(botPlayer.enemyPlaceShipBoard);
-			enemyInfo.setMyShotBoard(botPlayer.myShotBoard);
-			enemyInfo.setEnemyShipData(botPlayer.enemyShipData);
+				enemyInfo.setEnemyShotBoard(botPlayer.enemyShotNo2d);
+				enemyInfo.setMyPlaceShipBoard(botPlayer.myPlaceShipBoard);
+				
+				enemyInfo.setEnemyPlaceShipBoard(botPlayer.enemyPlaceShipBoard);
+				enemyInfo.setMyShotBoard(botPlayer.myShotNoArr2d);
+				enemyInfo.setEnemyShipData(botPlayer.enemyShipData);
 
-			String filePath = PATH + enemyInfo.getEnemyPlayId() + "_" + sessionID + ".log";
-			GameUtil.writeLogInfoTofile(filePath, enemyInfo);
+				String fileName = enemyInfo.getEnemyPlayId() + "_" + sessionID + ".log";
+				GameUtil.writeLogInfoTofile(fileName, enemyInfo);
+
+				fileName = enemyInfo.getEnemyPlayId() + ".txt";
+				String title = "==== "+ botPlayer.enemyPlayId +" shot My Board (winer:" + botPlayer.winner +" -"+TIME_OUT+") GameId: " +  sessionID;
+				GameUtil.writeBoardLog(title, enemyInfo.getMyPlaceShipBoard(), enemyInfo.getEnemyShotBoard(), botPlayer.boardWidth, botPlayer.boardHeight, fileName);
+				fileName = enemyInfo.getEnemyPlayId() + "_shot_chimtau" + ".txt";
+				title = "==== chimtau shot "+ botPlayer.enemyPlayId +" Board (winer:" + botPlayer.winner +" -"+TIME_OUT+") GameId: " +  sessionID;
+				GameUtil.writeBoardLog(title, enemyInfo.getEnemyPlaceShipBoard(), enemyInfo.getMyShotBoard(), botPlayer.boardWidth, botPlayer.boardHeight, fileName);
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
 			logger.error(e);

@@ -35,7 +35,7 @@ public class CalculateProbabilityTask implements Runnable
 	public void run() {
 		//int count = 1;
 		while (true) {
-			Board board = new Board(width, heigh, coordinatesShotted, true, true);
+			Board board = new Board(width, heigh, coordinatesShotted);
 			shipEnemyMap.forEach((shipType, quanlity) -> {
 				while (quanlity-- > 0) {
 					board.addShip(new Ship(shipType));

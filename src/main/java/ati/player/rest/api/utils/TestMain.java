@@ -1,5 +1,9 @@
 package ati.player.rest.api.utils;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -16,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 import ati.player.rest.api.controller.CalculateProbabilityTask;
 import ati.player.rest.api.entity.Coordinate;
 import ati.player.rest.api.entity.EnemyPlayInfo;
+import ati.player.rest.api.entity.GameConfig;
 
 public class TestMain {
 
@@ -23,7 +28,10 @@ public class TestMain {
 	private static int height =8;
 	private static int width  =20;
 	
-	public static void main(String[] args) throws Exception {
+	
+	
+	
+	public static void main1(String[] args) throws Exception {
 		String myPlayId = "chimtau";
 		String enemyPlayId = "BAOTHU";
 		String tokenId = "";
@@ -35,20 +43,63 @@ public class TestMain {
 
 		System.out.println("===== My Shot Board " + myPlayId);
 		print(EnemyPlayInfo.getMyShotBoard());
+		
+		String pathOutput = PATH + "BAOTHU.txt";
+		writeBoardLog("ENEMY BOARD", EnemyPlayInfo.getEnemyPlaceShipBoard(), EnemyPlayInfo.getMyShotBoard(), pathOutput);
 
-		System.out.println("===== My Board " + myPlayId);
-		print(EnemyPlayInfo.getMyShotBoard());
-		
-		System.out.println("===== ENEMY Shot Board " + myPlayId);
-		print(EnemyPlayInfo.getEnemyShotBoard());
-		
-		System.out.println("===== Enemy List Ship " + enemyPlayId);
-		System.out.println(EnemyPlayInfo.getEnemyShipData());
+//		System.out.println("===== My Board " + myPlayId);
+//		print(EnemyPlayInfo.getMyShotBoard());
+//		
+//		System.out.println("===== ENEMY Shot Board " + myPlayId);
+//		print(EnemyPlayInfo.getEnemyShotBoard());
+//		
+//		System.out.println("===== Enemy List Ship " + enemyPlayId);
+//		System.out.println(EnemyPlayInfo.getEnemyShipData());
 		
 		// System.out.println(JsonUtil.objectToJson(EnemyPlayInfo));
 
 	}
 	
+    public static void writeBoardLog(String title, char [][] gridBoard, int [][] gridShotno, String filePath) throws IOException {
+    	StringBuffer sb = new StringBuffer();
+    	sb.append("==== Title :" + title);
+    	sb.append("\n");
+    	String content;
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+            	sb.append(gridBoard[x][y] + " (" + gridShotno[x][y] + ")\t");
+            }
+            sb.append("\n");
+            // System.out.println();
+        }
+        System.out.println(sb.toString());
+        
+        
+		File file = new File(filePath);
+		if (!file.exists()) {
+			file.createNewFile();
+		}
+		FileWriter fw = new FileWriter(file.getAbsoluteFile(), true);
+		BufferedWriter bw = new BufferedWriter(fw);
+		bw.write(sb.toString());
+		bw.close();
+		System.out.println("Done write log to " + filePath);
+    }
+	
+    public static void main(String[] args)  throws IOException {
+    	String filePath = PATH + "//config//"+ "deFault" + ".config";
+    	GameConfig gameConfig = new GameConfig();
+		File file = new File(filePath);
+		if (!file.exists()) {
+			file.createNewFile();
+		}
+		FileWriter fw = new FileWriter(file.getAbsoluteFile(), true);
+		BufferedWriter bw = new BufferedWriter(fw);
+		bw.write(JsonUtil.objectToJson(gameConfig));
+		bw.close();
+		System.out.println("Done write log to " + filePath);
+    }
+    
     public static void print(int [][] grid) {
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
@@ -83,7 +134,7 @@ public class TestMain {
 	}
 	
 	
-	public static void main1(String[] args) throws InterruptedException {
+	public static void main12(String[] args) throws InterruptedException {
 		
 		while (true) {
 			Board board = new Board(20, 8);
@@ -99,6 +150,7 @@ public class TestMain {
 
 			// board.addShip(new Ship("CV"));
 			board.addShip(new Ship("CV"));
+			board.flagPlaceVertical = true;
 			board.placeShipsRandomly();
 			board.print();
 			
@@ -122,7 +174,7 @@ public class TestMain {
 		int width = 20;
 		
 		while (tryCount-- > 0) {
-			Board board = new Board(width, heigh, coordinatesShotted, true, true);
+			Board board = new Board(width, heigh, coordinatesShotted);
 			board.addShip(new Ship("DD"));
 //			board.addShip(new Ship("DD"));
 			board.addShip(new Ship("CA"));
