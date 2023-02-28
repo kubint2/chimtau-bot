@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Random;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.commons.collections.CollectionUtils;
 
@@ -92,18 +93,26 @@ public class BotPlayer {
 	public List<int[]> getShotsTurnResult() {
 		List<int[]> result = new ArrayList<>();
 		flagGetMaxShot = false;
+		
+		// main
 		List<Coordinate> showTurns = this.getshotsTurn();
+		
+		
 		if(CollectionUtils.isEmpty(showTurns)) {
 			// return random shot
 			Coordinate Coordinate = makeSmartRandomShot();
 			result.add(new int[] {Coordinate.getX(), Coordinate.getY()});
 		} else {
-			if (showTurns.size() >= 2) {
-				for (Coordinate coordinate : showTurns) {
-					coordinate.setScore(boardEnemy[coordinate.getX()][coordinate.getY()]);
-				}
-				showTurns.sort((o1, o2) -> o2.getScore() - o1.getScore());
-
+			// remove dupplicate value if exist
+			showTurns = showTurns.stream().distinct().collect(Collectors.toList());
+			// add score
+			for (Coordinate coordinate : showTurns) {
+				coordinate.setScore(boardEnemy[coordinate.getX()][coordinate.getY()]);
+			}
+			// order
+			showTurns.sort((o1, o2) -> o2.getScore() - o1.getScore());
+			
+			if (showTurns.size() >= this.maxShots) {// if (showTurns.size() >= 2) {
 				if (!flagGetMaxShot) {
 					result.add(new int[] { showTurns.get(0).getX(), showTurns.get(0).getY() });
 				} else {
@@ -154,9 +163,29 @@ public class BotPlayer {
 			if (CollectionUtils.isNotEmpty(neightBour2point)) {
 				return neightBour2point;
 			} else {
-				typeCheck = 4;
 				// Shot neightBour previousHit
-				return makeShotNeighbors();
+				List<Coordinate> unshotNeighbors =  makeShotNeighbors();
+				if(unshotNeighbors.size()==3) {
+					if (shipEnemyMap.containsKey("OR")) {
+						Coordinate coordinateA = unshotNeighbors.get(0);
+						Coordinate coordinateB = unshotNeighbors.get(1);
+						Coordinate coordinateC = unshotNeighbors.get(2);
+						if(coordinateA.getX()==coordinateB.getX() || coordinateA.getY()==coordinateB.getY()) {
+							unshotNeighbors.remove(coordinateC);
+						} else if(coordinateA.getX()==coordinateC.getX() || coordinateA.getY()==coordinateC.getY()) {
+							unshotNeighbors.remove(coordinateB);
+						} else if(coordinateB.getX()==coordinateC.getX() || coordinateB.getY()==coordinateC.getY()) {
+							unshotNeighbors.remove(coordinateA);
+						}
+						flagGetMaxShot = true;
+					} else {
+						// check type CV
+						
+						
+					}
+				}
+				
+				return unshotNeighbors;
 			}
 
 		} else if (hitCoordinateList.size() == 3) {

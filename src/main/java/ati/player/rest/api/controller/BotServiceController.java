@@ -125,7 +125,7 @@ public class BotServiceController {
 				}
 			}
 
-			if(gameConfig.getTimeOut() > 400 && gameConfig.getTimeOut() < 7000) {
+			if(gameConfig.getTimeOut() > 400 && gameConfig.getTimeOut() < 8000) {
 				botPlayer.timeOut = gameConfig.getTimeOut();
 			}
 			
