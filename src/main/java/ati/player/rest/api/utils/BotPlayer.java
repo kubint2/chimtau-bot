@@ -39,7 +39,8 @@ public class BotPlayer {
 	public int myShotNo = 0;
 	public char[][] myPlaceShipBoard;
 
-
+	private static final int TIME_OUT = 500;
+	public int timeOut = TIME_OUT;
 	// private BotPlayer instance;
 
 	public BotPlayer() {

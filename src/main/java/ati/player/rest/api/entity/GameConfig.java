@@ -7,6 +7,8 @@ public class GameConfig {
 	private Boolean flagCanPutOnBorder = null;
     private Boolean flagCanHaveNeighbour = null;
 	private Boolean flagPlaceVertical = null;
+	private static final int TIME_OUT = 500;
+	private int timeOut = TIME_OUT;
 
 	public Boolean getFlagCanPutOnBorder() {
 		return flagCanPutOnBorder;
@@ -46,6 +48,14 @@ public class GameConfig {
 
 	public void setPriorityShotsList(List<int[]> priorityShotsList) {
 		this.priorityShotsList = priorityShotsList;
+	}
+
+	public int getTimeOut() {
+		return timeOut;
+	}
+
+	public void setTimeOut(int timeOut) {
+		this.timeOut = timeOut;
 	}
 
 	private List<int[]> ignorePlaceShip = new ArrayList<>() ;

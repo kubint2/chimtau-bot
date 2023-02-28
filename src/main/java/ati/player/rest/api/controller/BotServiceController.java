@@ -59,7 +59,6 @@ public class BotServiceController {
 	private static final String BOT_ID = "chimtau";
 	
 	// public static final int TIME_OUT = 5000;
-	private static final int TIME_OUT = 500;
 
 	private Map<String, BotPlayer> botPlayerMap = new HashMap<>();
 
@@ -86,7 +85,7 @@ public class BotServiceController {
 			response.setSuccess(true);
 
 			//
-			calculateProbailityTask(botPlayer, 2000);
+			calculateProbailityTask(botPlayer, 1000);
 		} catch (Exception e) {
 			e.printStackTrace();
 			logger.error(e);
@@ -126,6 +125,10 @@ public class BotServiceController {
 				}
 			}
 
+			if(gameConfig.getTimeOut() > 400 && gameConfig.getTimeOut() < 7000) {
+				botPlayer.timeOut = gameConfig.getTimeOut();
+			}
+			
 			// set response
 			Board board = new Board(botPlayer.boardWidth, botPlayer.boardHeight, coordinatesShotted);
 			for (ShipRequest shipReq : botPlayer.ships) {
@@ -296,7 +299,7 @@ public class BotServiceController {
 				// check hitList
 				//if (CollectionUtils.isEmpty(botPlayer.hitCoordinateList) || botPlayer.hitCoordinateList.size() > 5) {
 				if(calculateProbabilityTask) {
-					calculateProbailityTask(botPlayer, TIME_OUT);
+					calculateProbailityTask(botPlayer, botPlayer.timeOut);
 				}
 			} else {
 				botPlayer.enemyShotNo++; // for write log
@@ -365,10 +368,10 @@ public class BotServiceController {
 				GameUtil.writeLogInfoTofile(fileName, enemyInfo);
 
 				fileName = enemyInfo.getEnemyPlayId() + ".txt";
-				String title = "==== "+ botPlayer.enemyPlayId +" shot My Board (winer:" + botPlayer.winner +" -"+TIME_OUT+") GameId: " +  sessionID;
+				String title = "==== "+ botPlayer.enemyPlayId +" shot My Board (winer:" + botPlayer.winner +" -"+botPlayer.timeOut+") GameId: " +  sessionID;
 				GameUtil.writeBoardLog(title, enemyInfo.getMyPlaceShipBoard(), enemyInfo.getEnemyShotBoard(), botPlayer.boardWidth, botPlayer.boardHeight, fileName);
 				fileName = enemyInfo.getEnemyPlayId() + "_shot_chimtau" + ".txt";
-				title = "==== chimtau shot "+ botPlayer.enemyPlayId +" Board (winer:" + botPlayer.winner +" -"+TIME_OUT+") GameId: " +  sessionID;
+				title = "==== chimtau shot "+ botPlayer.enemyPlayId +" Board (winer:" + botPlayer.winner +" -"+botPlayer.timeOut+") GameId: " +  sessionID;
 				GameUtil.writeBoardLog(title, enemyInfo.getEnemyPlaceShipBoard(), enemyInfo.getMyShotBoard(), botPlayer.boardWidth, botPlayer.boardHeight, fileName);
 			}
 		} catch (Exception e) {
