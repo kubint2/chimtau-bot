@@ -79,7 +79,7 @@ public class BotPlayer {
     public List<Coordinate> hitCoordinateList = new ArrayList<>();
     public Coordinate previousHit;
     public int typeCheck = 0 ; // 0: random , 1:neigh bour, 2: typeA(DD,CA,BB), 3: type C(OR), 4: type B(CA), >5 other 
-    private Boolean vertical = null;
+//    private Boolean vertical = null;
     public Map<String, Integer> shipEnemyMap = new HashMap<>();
 	public int shipRemainCount;
 
@@ -92,7 +92,7 @@ public class BotPlayer {
     public void resetCalculator() {
     	typeCheck = 0;
     	previousHit = null;
-    	vertical = null;
+//    	vertical = null;
     	// hitCoordinateList = new ArrayList<>();
     }
 
@@ -145,6 +145,7 @@ public class BotPlayer {
 		return result;
 	}
 	
+
 	public List<Coordinate> getshotsTurn() {
 		if (hitCoordinateList.size() == 0) {
 			typeCheck = 0;
@@ -168,10 +169,18 @@ public class BotPlayer {
 			boolean isVetical = (first.getX() == second.getX());
 			if (shipEnemyMap.containsKey(Ship.SHIP_CA) || shipEnemyMap.containsKey(Ship.SHIP_BB)
 					|| shipEnemyMap.containsKey(Ship.SHIP_CV)) {
-				flagGetMaxShot = true;
 				neightBour2point = getNeightBourTypeA(hitCoordinateList, isVetical);
+			}
+
+			if (CollectionUtils.isNotEmpty(neightBour2point)) {
+				if (shipEnemyMap.containsKey(Ship.SHIP_BB)
+						|| shipEnemyMap.containsKey(Ship.SHIP_CV)) {
+					flagGetMaxShot = true;
+				}
+				return neightBour2point;
 			} else {
-				List<Coordinate> unshotNeighbors = makeShotNeighbors();
+				// Shot neightBour previousHit
+				List<Coordinate> unshotNeighbors = this.makeShotNeighbors();
 				Iterator<Coordinate> unshotNeighborIters = unshotNeighbors.iterator();
 				while (unshotNeighborIters.hasNext()) {
 					Coordinate obj = unshotNeighborIters.next(); // must be called before you can call i.remove()
@@ -185,29 +194,37 @@ public class BotPlayer {
 						}
 					}
 				}
-			}
 
-			if (CollectionUtils.isNotEmpty(neightBour2point)) {
-				return neightBour2point;
-			} else {
-				// Shot neightBour previousHit
-				List<Coordinate> unshotNeighbors =  makeShotNeighbors();
 				if(unshotNeighbors.size()==3) {
 					if (shipEnemyMap.containsKey(Ship.SHIP_OR)) {
 						Coordinate coordinateA = unshotNeighbors.get(0);
 						Coordinate coordinateB = unshotNeighbors.get(1);
 						Coordinate coordinateC = unshotNeighbors.get(2);
-						if(coordinateA.getX()==coordinateB.getX() || coordinateA.getY()==coordinateB.getY()) {
+						if ((coordinateA.getX() == coordinateB.getX()
+								&& Math.abs(coordinateA.getY() - coordinateB.getY()) == 1)
+								|| (coordinateA.getY() == coordinateB.getY())
+										&& Math.abs(coordinateA.getX() - coordinateB.getX()) == 1) {
 							unshotNeighbors.remove(coordinateC);
-						} else if(coordinateA.getX()==coordinateC.getX() || coordinateA.getY()==coordinateC.getY()) {
+						} else if ((coordinateA.getX() == coordinateC.getX()
+								&& Math.abs(coordinateA.getY() - coordinateC.getY()) == 1)
+								|| (coordinateA.getY() == coordinateC.getY())
+										&& Math.abs(coordinateA.getX() - coordinateC.getX()) == 1) {
 							unshotNeighbors.remove(coordinateB);
-						} else if(coordinateB.getX()==coordinateC.getX() || coordinateB.getY()==coordinateC.getY()) {
+						} else if ((coordinateB.getX() == coordinateC.getX()
+								&& Math.abs(coordinateB.getY() - coordinateC.getY()) == 1)
+								|| (coordinateB.getY() == coordinateC.getY())
+										&& Math.abs(coordinateB.getX() - coordinateC.getX()) == 1) {
 							unshotNeighbors.remove(coordinateA);
 						}
-						flagGetMaxShot = true;
 					}
 				}
-				
+
+				if (unshotNeighbors.size()<= 3) {
+					flagGetMaxShot = true;
+				} else {
+					flagGetMaxShot = false;
+				}
+
 				return unshotNeighbors;
 			}
 
@@ -219,19 +236,19 @@ public class BotPlayer {
 			Coordinate third = hitCoordinateList.get(2);
 
 			List<Coordinate> neightBour3point = new ArrayList<>();
-			// check vertical
+			
+			Boolean isVetical;
 			if (first.getY() == second.getY() && first.getY() == third.getY()) {
-				flagGetMaxShot = true;
-				typeCheck = 3;
-				vertical = false;
-				// lấy 1 điểm trong 2 điểm đầu và cuối để shot
-				neightBour3point = getNeightBourTypeA(hitCoordinateList, false);
+				isVetical = false;
 			} else if (first.getX() == second.getX() && first.getX() == third.getX()) {
-				flagGetMaxShot = true;
-				vertical = true;
-				neightBour3point = getNeightBourTypeA(hitCoordinateList, true);
+				isVetical = true;
 			} else {
-				vertical = null;
+				isVetical = null;
+			}
+			
+			if (isVetical != null)  {
+				neightBour3point = getNeightBourTypeA(hitCoordinateList, isVetical);
+			} else {
 				// 3 điểm không thẳng hàng -> tìm điểm góc vuông
 				Coordinate coordinateFourth = findFourthCoordinate(hitCoordinateList);
 				// Check valid coordinateFourth
@@ -251,50 +268,56 @@ public class BotPlayer {
 			}
 		} else if (hitCoordinateList.size() == 4) {
 			typeCheck = 4;
-			
+
 			Coordinate first = hitCoordinateList.get(0);
 			Coordinate second = hitCoordinateList.get(1);
 			Coordinate third = hitCoordinateList.get(2);
 			Coordinate four = hitCoordinateList.get(3);
 			List<Coordinate> neightBour4point = new ArrayList<>();
-			Coordinate remainPoin;
+			
+			if (this.shipEnemyMap.containsKey(Ship.SHIP_CV)) {
+				Coordinate remainPoin;
+				Boolean isVetical;
+				if (first.getY() == second.getY() && first.getY() == third.getY() && first.getY() == four.getY()) {
+					isVetical = false;
+				} else if (first.getX() == second.getX() && first.getX() == third.getX()
+						&& first.getX() == four.getX()) {
+					isVetical = true;
+				} else {
+					isVetical = null;
+				}
 
-			if (first.getY() == second.getY() && first.getY() == third.getY()&& first.getY() == four.getY()) {
-				vertical = false;
-				// check board CV
-				Coordinate minCoordinateColX = hitCoordinateList.stream().min(Comparator.comparing(Coordinate::getX))
-						.orElseThrow(NoSuchElementException::new);
-				remainPoin = new Coordinate(minCoordinateColX.getX()+1, minCoordinateColX.getY()-1);
-				if (isValidForShot(remainPoin)) {
-					neightBour4point.add(remainPoin);
-				}
-			} else if (first.getX() == second.getX() && first.getX() == third.getX()&& first.getX() == four.getX()) {
-				vertical = true;
-				// check board CV
-				Coordinate minCoordinateRowY = hitCoordinateList.stream().min(Comparator.comparing(Coordinate::getY))
-						.orElseThrow(NoSuchElementException::new);
-				remainPoin = new Coordinate(minCoordinateRowY.getX() - 1, minCoordinateRowY.getY() + 1);
-				if (isValidForShot(remainPoin)) {
-					neightBour4point.add(remainPoin);
-				}
-			} else {
-				vertical = false;
-				
-				List<Coordinate> listCoordinateInline = removeNonCollinearCoordinates(hitCoordinateList);
-				if ((listCoordinateInline.get(0).getX() == listCoordinateInline.get(1).getX())
-						&& (listCoordinateInline.get(0).getX() == listCoordinateInline.get(2).getX())) {
-					Coordinate maxCoordinateRowY = hitCoordinateList.stream().max(Comparator.comparing(Coordinate::getY))
-							.orElseThrow(NoSuchElementException::new);
-					remainPoin = new Coordinate(maxCoordinateRowY.getX(), maxCoordinateRowY.getY()+1);
-					if (isValidForShot(remainPoin)) {
-						neightBour4point.add(remainPoin);
+				if (isVetical != null) {
+					if (isVetical) {
+						Coordinate minCoordinateRowY = hitCoordinateList.stream()
+								.min(Comparator.comparing(Coordinate::getY)).orElseThrow(NoSuchElementException::new);
+						remainPoin = new Coordinate(minCoordinateRowY.getX() - 1, minCoordinateRowY.getY() + 1);
+						if (isValidForShot(remainPoin))
+							neightBour4point.add(remainPoin);
+					} else {
+						Coordinate minCoordinateColX = hitCoordinateList.stream()
+								.min(Comparator.comparing(Coordinate::getX)).orElseThrow(NoSuchElementException::new);
+						remainPoin = new Coordinate(minCoordinateColX.getX() + 1, minCoordinateColX.getY() - 1);
+						if (isValidForShot(remainPoin))
+							neightBour4point.add(remainPoin);
 					}
 				} else {
-					Coordinate maxCoordinateColX = hitCoordinateList.stream().max(Comparator.comparing(Coordinate::getX))
-							.orElseThrow(NoSuchElementException::new);
-					remainPoin = new Coordinate(maxCoordinateColX.getX()+1, maxCoordinateColX.getY());
-					if (isValidForShot(remainPoin)) {
-						neightBour4point.add(remainPoin);
+					List<Coordinate> listCoordinateInline = removeNonCollinearCoordinates(hitCoordinateList);
+					if ((listCoordinateInline.get(0).getX() == listCoordinateInline.get(1).getX())
+							&& (listCoordinateInline.get(0).getX() == listCoordinateInline.get(2).getX())) {
+						Coordinate maxCoordinateRowY = hitCoordinateList.stream()
+								.max(Comparator.comparing(Coordinate::getY)).orElseThrow(NoSuchElementException::new);
+						remainPoin = new Coordinate(maxCoordinateRowY.getX(), maxCoordinateRowY.getY() + 1);
+						if (isValidForShot(remainPoin)) {
+							neightBour4point.add(remainPoin);
+						}
+					} else {
+						Coordinate maxCoordinateColX = hitCoordinateList.stream()
+								.max(Comparator.comparing(Coordinate::getX)).orElseThrow(NoSuchElementException::new);
+						remainPoin = new Coordinate(maxCoordinateColX.getX() + 1, maxCoordinateColX.getY());
+						if (isValidForShot(remainPoin)) {
+							neightBour4point.add(remainPoin);
+						}
 					}
 				}
 			}
@@ -413,7 +436,8 @@ public class BotPlayer {
     	List<Coordinate> neightBourTypeA = new ArrayList<>();
     	Coordinate min;
     	Coordinate max;
-    	Coordinate obj;
+    	Coordinate objMin;
+    	Coordinate objMax;
 		if (isVetical) {
 			int minRowY = hitList.stream().min(Comparator.comparing(Coordinate::getY))
 					.orElseThrow(NoSuchElementException::new).getY();
@@ -422,13 +446,13 @@ public class BotPlayer {
 
 			int colX = hitList.get(0).getX();
 			// validate
-			obj = new Coordinate(colX, minRowY-1);
-			if (isValidForShot(obj)) {
-				neightBourTypeA.add(obj);
+			objMin = new Coordinate(colX, minRowY-1);
+			if (isValidForShot(objMin)) {
+				neightBourTypeA.add(objMin);
 			}
-			obj = new Coordinate(colX, maxRowY+1);
-			if (isValidForShot(obj)) {
-				neightBourTypeA.add(obj);
+			objMax = new Coordinate(colX, maxRowY+1);
+			if (isValidForShot(objMax)) {
+				neightBourTypeA.add(objMax);
 			}
 		} else {
 			int minColX = hitList.stream().min(Comparator.comparing(Coordinate::getX))
@@ -438,15 +462,41 @@ public class BotPlayer {
 
         	int rowY = hitList.get(0).getY();
         	// validate
-			obj = new Coordinate(minColX-1, rowY);
-        	if (isValidForShot(obj)) {
-        		neightBourTypeA.add(obj);
+        	objMin = new Coordinate(minColX-1, rowY);
+        	if (isValidForShot(objMin)) {
+        		neightBourTypeA.add(objMin);
         	}
-        	obj = new Coordinate(maxColX+1,rowY);
-        	if (isValidForShot(obj)) {
-        		neightBourTypeA.add(obj);
+        	objMax = new Coordinate(maxColX+1,rowY);
+        	if (isValidForShot(objMax)) {
+        		neightBourTypeA.add(objMax);
         	}
-		}    	
+		} 
+
+		if (neightBourTypeA.size() == 1 && this.maxShots >= 2
+				&& (shipEnemyMap.containsKey(Ship.SHIP_BB) || shipEnemyMap.containsKey(Ship.SHIP_CV))) {
+			if (neightBourTypeA.contains(objMin)) {
+				Coordinate obj;
+				if (isVetical) {
+					obj = new Coordinate(objMin.getX(), objMin.getY() - 1);
+				} else {
+					obj = new Coordinate(objMin.getX() - 1, objMin.getY());
+				}
+				if (isValidForShot(obj)) {
+					neightBourTypeA.add(obj);
+				}
+			} else if (neightBourTypeA.contains(objMax)) {
+				Coordinate obj;
+				if (isVetical) {
+					obj = new Coordinate(objMax.getX(), objMax.getY() + 1);
+				} else {
+					obj = new Coordinate(objMax.getX(), objMax.getY() - 1);
+				}
+				if (isValidForShot(obj)) {
+					neightBourTypeA.add(obj);
+				}
+			}
+		}
+
     	return neightBourTypeA;
     }
     
@@ -482,28 +532,7 @@ public class BotPlayer {
 		}
         return null;
     }
-    
-    public static void main(String[] args) throws Exception {
-    	List<Coordinate> hitList = new ArrayList<>();
-//    			List.of(
-//         new Coordinate(8, 4),
-//         new Coordinate(8, 5),
-//         new Coordinate(9, 5)
-//        );
-    	hitList.add(new Coordinate(8, 4));
-    	hitList.add(new Coordinate(8, 5));
-    	hitList.add(new Coordinate(9, 5));
-
-		Iterator<Coordinate> unshotNeighborIters = hitList.iterator();
-		while (unshotNeighborIters.hasNext()) {
-			Coordinate obj = unshotNeighborIters.next(); // must be called before you can call i.remove()
-			 if(obj.getX() == 8) {
-				 unshotNeighborIters.remove();
-			 }
-		}
-		System.out.println(JsonUtil.objectToJson(hitList));
-    }
-    
+     
     public static Coordinate findSquareCorner(List<Coordinate> coordinates) {
         // Tính độ dài đường chéo chính của hình vuông
         double diagonalLength = Math.sqrt(2) * getDistance(coordinates.get(0), coordinates.get(1));
@@ -544,13 +573,16 @@ public class BotPlayer {
         return coordinates;
     }
     
-//    public static void main(String[] args) {
-//        List<Coordinate> coordinates = List.of(
-//                new Coordinate(5, 4),
-//                new Coordinate(6, 4),
-//                new Coordinate(6, 3)
-//            );
-//        //System.out.println( JsonUtil.objectToJson(findSquareCorner(coordinates)));
-//    }
+    public static void main(String[] args) {
+        List<Coordinate> coordinates = List.of(
+                new Coordinate(6, 3),
+                new Coordinate(6, 4),
+                new Coordinate(5, 4)
+            );
+//        === Hit List : [{"x":6,"y":3,"score":0},{"x":6,"y":4,"score":0},{"x":5,"y":5,"score":0}]
+//        		=== Type Check: 3= Shots Output: [{"x":5,"y":4,"score":119},{"x":7,"y":4,"score":98}]
+        
+        System.out.println( JsonUtil.objectToJson(findSquareCorner(coordinates)));
+    }
     
 }

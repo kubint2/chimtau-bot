@@ -87,7 +87,7 @@ public class TestMain {
     }
 	
     public static void main(String[] args)  throws IOException {
-    	String filePath = PATH + "//config//"+ "deFault" + ".config";
+    	String filePath = PATH + "//config//"+ "defaulttest" + ".config";
     	GameConfig gameConfig = new GameConfig();
 		File file = new File(filePath);
 		if (!file.exists()) {
