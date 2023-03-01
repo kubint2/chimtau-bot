@@ -85,7 +85,7 @@ public class BotServiceController {
 			response.setSuccess(true);
 
 			//
-			calculateProbailityTask(botPlayer, 1000);
+			// calculateProbailityTask(botPlayer, 1000);
 		} catch (Exception e) {
 			e.printStackTrace();
 			logger.error(e);
@@ -129,6 +129,7 @@ public class BotServiceController {
 				botPlayer.timeOut = gameConfig.getTimeOut();
 			}
 			
+			botPlayer.modeEasy = gameConfig.getModeEasy();
 			// set response
 			Board board = new Board(botPlayer.boardWidth, botPlayer.boardHeight, coordinatesShotted);
 			for (ShipRequest shipReq : botPlayer.ships) {
@@ -223,7 +224,6 @@ public class BotServiceController {
 			BotPlayer botPlayer = botPlayerMap.get(sessionID);
 
 			if(gameNotifyReq.getPlayerId().equalsIgnoreCase(BOT_ID)) {
-				boolean calculateProbabilityTask =  false;
 				botPlayer.myShotNo++; // for write log
 				List<ShotData> shotResult = gameNotifyReq.getShots();
 				for (ShotData shotData : shotResult) {
@@ -239,24 +239,25 @@ public class BotServiceController {
 							botPlayer.hitCoordinateList.add(coordinateObj);
 						}
 						botPlayer.board[x][y]=2;
-						
-						calculateProbabilityTask = true;
+
 						
 						botPlayer.enemyPlaceShipBoard[x][y] = 'X'; // for write log
 					} else {
 						botPlayer.board[x][y]=1;
 						botPlayer.coordinatesShotted.add(coordinateObj);
-						calculateProbabilityTask = true;
 					}
 				}
 				// in case sunk ship data or [ ]
 				if(CollectionUtils.isNotEmpty(gameNotifyReq.getSunkShips())) {
-					calculateProbabilityTask = true;
 					botPlayer.shipRemainCount--;
 					for (ShipData shipData : gameNotifyReq.getSunkShips()) {
 						if(botPlayer.shipEnemyMap.containsKey(shipData.getType())) {
 							Integer quanty = botPlayer.shipEnemyMap.get(shipData.getType()) - 1;
-							botPlayer.shipEnemyMap.put(shipData.getType(), quanty);
+							if(quanty <= 0) {
+								botPlayer.shipEnemyMap.remove(shipData.getType());
+							} else {
+								botPlayer.shipEnemyMap.put(shipData.getType(), quanty);
+							}
 						}
 
 						for (int[] coordinate : shipData.getCoordinates()) {
@@ -298,9 +299,9 @@ public class BotServiceController {
 
 				// check hitList
 				//if (CollectionUtils.isEmpty(botPlayer.hitCoordinateList) || botPlayer.hitCoordinateList.size() > 5) {
-				if(calculateProbabilityTask) {
-					calculateProbailityTask(botPlayer, botPlayer.timeOut);
-				}
+//				if(calculateProbabilityTask) {
+//					calculateProbailityTask(botPlayer, botPlayer.timeOut);
+//				}
 			} else {
 				botPlayer.enemyShotNo++; // for write log
 				// for write log enemy
@@ -321,19 +322,19 @@ public class BotServiceController {
 		return new ResponseEntity<NotifyResult>(response, HttpStatus.OK);
 	}
 
-	private void calculateProbailityTask(BotPlayer botPlayer , int timeOut) throws InterruptedException {
-		CalculateProbabilityTask task = new CalculateProbabilityTask(botPlayer.boardWidth,
-				botPlayer.boardHeight, botPlayer.coordinatesShotted, botPlayer.hitCoordinateList, botPlayer.shipEnemyMap);
-
-		ScheduledExecutorService executor = Executors.newScheduledThreadPool(2);
-		Future<?> future = executor.submit(task);
-		Runnable cancelTask = () -> future.cancel(true);
-		executor.schedule(cancelTask, timeOut, TimeUnit.MILLISECONDS);
-		executor.shutdown();
-		Thread.sleep(timeOut);
-		
-		botPlayer.boardEnemy = task.boardEnemy;
-	}
+//	private void calculateProbailityTask(BotPlayer botPlayer , int timeOut) throws InterruptedException {
+//		CalculateProbabilityTask task = new CalculateProbabilityTask(botPlayer.boardWidth,
+//				botPlayer.boardHeight, botPlayer.coordinatesShotted, botPlayer.hitCoordinateList, botPlayer.shipEnemyMap);
+//
+//		ScheduledExecutorService executor = Executors.newScheduledThreadPool(2);
+//		Future<?> future = executor.submit(task);
+//		Runnable cancelTask = () -> future.cancel(true);
+//		executor.schedule(cancelTask, timeOut, TimeUnit.MILLISECONDS);
+//		executor.shutdown();
+//		Thread.sleep(timeOut);
+//		
+//		botPlayer.boardEnemy = task.boardEnemy;
+//	}
 	
 	@ResponseBody
 	@RequestMapping(value = "/game-over", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)

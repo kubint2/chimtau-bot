@@ -10,10 +10,15 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.apache.commons.collections.CollectionUtils;
 
+import ati.player.rest.api.controller.CalculateProbabilityTask;
 import ati.player.rest.api.entity.Coordinate;
 import ati.player.rest.api.entity.ShipData;
 import ati.player.rest.api.request.ShipRequest;
@@ -43,7 +48,7 @@ public class BotPlayer {
 
 	private static final int TIME_OUT = 500;
 	public int timeOut = TIME_OUT;
-	
+	public boolean modeEasy = false;
 
 	// private BotPlayer instance;
 
@@ -96,47 +101,78 @@ public class BotPlayer {
     	// hitCoordinateList = new ArrayList<>();
     }
 
+	private void calculateProbailityTask() throws InterruptedException {
+		CalculateProbabilityTask task = new CalculateProbabilityTask(this.boardWidth,
+				this.boardHeight, this.coordinatesShotted, this.hitCoordinateList, this.shipEnemyMap);
+
+		ScheduledExecutorService executor = Executors.newScheduledThreadPool(2);
+		Future<?> future = executor.submit(task);
+		Runnable cancelTask = () -> future.cancel(true);
+		executor.schedule(cancelTask, this.timeOut, TimeUnit.MILLISECONDS);
+		executor.shutdown();
+		Thread.sleep(timeOut);
+		
+		this.boardEnemy = task.boardEnemy;
+	}
+    
 	public List<int[]> getShotsTurnResult() {
 		List<int[]> result = new ArrayList<>();
 		flagGetMaxShot = false;
 		
 		// main
-		List<Coordinate> showTurns = this.getshotsTurn();
+		List<Coordinate> showTurns = new ArrayList<>();
+		if (modeEasy) {
+			if (hitCoordinateList.size() == 0) {
+				showTurns.add(this.makeRandomShot());
+			} else {
+				showTurns = this.makeShotNeighbors();
+			}
+			result.add(new int[] {showTurns.get(0).getX(), showTurns.get(0).getY()});
+			return result;
+		}
+		showTurns = this.getshotsTurn(); // main
+		// remove duplicate value if exist
+		showTurns = showTurns.stream().distinct().collect(Collectors.toList());
 
 		if(CollectionUtils.isEmpty(showTurns)) {
 			// return random shot
 			Coordinate Coordinate = makeSmartRandomShot();
 			result.add(new int[] {Coordinate.getX(), Coordinate.getY()});
+		} else if (showTurns.size() ==1) {
+			result.add(new int[] {showTurns.get(0).getX(), showTurns.get(0).getY()});
 		} else {
-			// remove duplicate value if exist
-			showTurns = showTurns.stream().distinct().collect(Collectors.toList());
-			// add score
-			for (Coordinate coordinate : showTurns) {
-				coordinate.setScore(boardEnemy[coordinate.getX()][coordinate.getY()]);
-			}
-			// order
-			showTurns.sort((o1, o2) -> o2.getScore() - o1.getScore());
-			
-			if (this.maxShots >= 2 && showTurns.size() >= 2) {// if (showTurns.size() >= 2) {
-				if (flagGetMaxShot || (showTurns.size() >= this.maxShots && this.maxShots >= 3)
-						|| !(shipEnemyMap.containsKey(Ship.SHIP_OR) || shipEnemyMap.containsKey(Ship.SHIP_BB)
-								|| shipEnemyMap.containsKey(Ship.SHIP_CV))) {
-					for (Coordinate coordinate : showTurns) {
-						result.add(new int[] {coordinate.getX(), coordinate.getY()});
-						if(--maxShots <= 0) {
-							break;
-						}
-					}
-				} else {
-					if (shipEnemyMap.size() < 2) {
-						
-						
-					} else {
-						result.add(new int[] { showTurns.get(0).getX(), showTurns.get(0).getY() });
-					}
+			// in case size showTurns >=2
+			if(flagGetMaxShot && showTurns.size() == this.maxShots) {
+				// add all
+				for (Coordinate coordinate : showTurns) {
+					result.add(new int[] {coordinate.getX(), coordinate.getY()});
 				}
 			} else {
-				result.add(new int[] {showTurns.get(0).getX(), showTurns.get(0).getY()});
+				// sort score
+				try {
+					this.calculateProbailityTask();
+					for (Coordinate coordinate : showTurns) {
+						coordinate.setScore(boardEnemy[coordinate.getX()][coordinate.getY()]);
+					}
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				// order
+				showTurns.sort((o1, o2) -> o2.getScore() - o1.getScore());
+				if (this.maxShots < 2) {
+					result.add(new int[] { showTurns.get(0).getX(), showTurns.get(0).getY() });
+				} else if (flagGetMaxShot || (showTurns.size() >= this.maxShots && this.maxShots >= 3)
+							|| !(shipEnemyMap.containsKey(Ship.SHIP_OR) || shipEnemyMap.containsKey(Ship.SHIP_BB)
+									|| shipEnemyMap.containsKey(Ship.SHIP_CV))) {
+						for (Coordinate coordinate : showTurns) {
+							result.add(new int[] {coordinate.getX(), coordinate.getY()});
+							if(--maxShots <= 0) {
+								break;
+							}
+						}
+				} else {
+					result.add(new int[] {showTurns.get(0).getX(), showTurns.get(0).getY()});
+				}
 			}
 		}
 		//
@@ -357,20 +393,26 @@ public class BotPlayer {
     		return coordinate;
     	}
 
-		List<Coordinate> coordinates = new ArrayList<>();
-        for (int y = 0; y < 8; y++) {
-            for (int x = 0; x < 20; x++) {
-            	if(board[x][y] == 0) {
-            		coordinates.add(new Coordinate(x, y, boardEnemy[x][y]));
-            	}
-                //System.out.print(boardEnemy[x][y] + "  ");
-            }
-        }
-		coordinate = coordinates.stream().max(Comparator.comparing(Coordinate::getScore))
-				.orElseThrow(NoSuchElementException::new);
-		if (coordinate != null) {
-			 System.out.println("MaxScore: " + JsonUtil.objectToJson(coordinate));
-				return coordinate;
+		// sort score
+		try {
+			this.calculateProbailityTask();
+			List<Coordinate> coordinates = new ArrayList<>();
+	        for (int y = 0; y < this.boardHeight; y++) {
+	            for (int x = 0; x < this.boardWidth; x++) {
+	            	if(board[x][y] == 0) {
+	            		coordinates.add(new Coordinate(x, y, boardEnemy[x][y]));
+	            	}
+	                //System.out.print(boardEnemy[x][y] + "  ");
+	            }
+	        }
+			coordinate = coordinates.stream().max(Comparator.comparing(Coordinate::getScore))
+					.orElseThrow(NoSuchElementException::new);
+			if (coordinate != null) {
+				 System.out.println("MaxScore: " + JsonUtil.objectToJson(coordinate));
+					return coordinate;
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 
 		return makeRandomShot();
@@ -474,12 +516,14 @@ public class BotPlayer {
 
 		if (neightBourTypeA.size() == 1 && this.maxShots >= 2
 				&& (shipEnemyMap.containsKey(Ship.SHIP_BB) || shipEnemyMap.containsKey(Ship.SHIP_CV))) {
+			this.flagGetMaxShot = true;
+			
 			if (neightBourTypeA.contains(objMin)) {
 				Coordinate obj;
 				if (isVetical) {
-					obj = new Coordinate(objMin.getX(), objMin.getY() - 1);
+					obj = new Coordinate(objMin.getX(), objMin.getY()-1);
 				} else {
-					obj = new Coordinate(objMin.getX() - 1, objMin.getY());
+					obj = new Coordinate(objMin.getX()-1, objMin.getY());
 				}
 				if (isValidForShot(obj)) {
 					neightBourTypeA.add(obj);
@@ -487,9 +531,9 @@ public class BotPlayer {
 			} else if (neightBourTypeA.contains(objMax)) {
 				Coordinate obj;
 				if (isVetical) {
-					obj = new Coordinate(objMax.getX(), objMax.getY() + 1);
+					obj = new Coordinate(objMax.getX(), objMax.getY()+1);
 				} else {
-					obj = new Coordinate(objMax.getX(), objMax.getY() - 1);
+					obj = new Coordinate(objMax.getX()+1, objMax.getY());
 				}
 				if (isValidForShot(obj)) {
 					neightBourTypeA.add(obj);

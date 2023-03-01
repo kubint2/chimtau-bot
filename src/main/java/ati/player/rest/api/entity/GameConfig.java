@@ -9,6 +9,8 @@ public class GameConfig {
 	private Boolean flagPlaceVertical = null;
 	private static final int TIME_OUT = 500;
 	private int timeOut = TIME_OUT;
+	private boolean modeEasy = false;
+	
 
 	public Boolean getFlagCanPutOnBorder() {
 		return flagCanPutOnBorder;
@@ -56,6 +58,18 @@ public class GameConfig {
 
 	public void setTimeOut(int timeOut) {
 		this.timeOut = timeOut;
+	}
+
+	public boolean isModeEasy() {
+		return modeEasy;
+	}
+	
+	public boolean getModeEasy() {
+		return modeEasy;
+	}
+
+	public void setModeEasy(boolean modeEasy) {
+		this.modeEasy = modeEasy;
 	}
 
 	private List<int[]> ignorePlaceShip = new ArrayList<>() ;
