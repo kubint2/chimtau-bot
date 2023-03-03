@@ -46,7 +46,7 @@ public class BotPlayer {
 	public int myShotNo = 0;
 	public char[][] myPlaceShipBoard;
 
-	private static final int TIME_OUT = 500;
+	private static final int TIME_OUT = 4000;
 	public int timeOut = TIME_OUT;
 	public boolean modeEasy = false;
 
@@ -88,7 +88,7 @@ public class BotPlayer {
     public Map<String, Integer> shipEnemyMap = new HashMap<>();
 	public int shipRemainCount;
 
-	public int [][] boardEnemy ;
+	private int [][] boardEnemy ;
     public List<Coordinate> priorityShotsList = new ArrayList<>();
     
     public List<Coordinate> coordinatesShotted = new ArrayList<>();
@@ -110,7 +110,7 @@ public class BotPlayer {
 		Runnable cancelTask = () -> future.cancel(true);
 		executor.schedule(cancelTask, this.timeOut, TimeUnit.MILLISECONDS);
 		executor.shutdown();
-		Thread.sleep(timeOut);
+		Thread.sleep(this.timeOut);
 		
 		this.boardEnemy = task.boardEnemy;
 	}
@@ -161,13 +161,28 @@ public class BotPlayer {
 				showTurns.sort((o1, o2) -> o2.getScore() - o1.getScore());
 				if (this.maxShots < 2) {
 					result.add(new int[] { showTurns.get(0).getX(), showTurns.get(0).getY() });
-				} else if (flagGetMaxShot || (showTurns.size() >= this.maxShots && this.maxShots >= 3)
-							|| !(shipEnemyMap.containsKey(Ship.SHIP_OR) || shipEnemyMap.containsKey(Ship.SHIP_BB)
-									|| shipEnemyMap.containsKey(Ship.SHIP_CV))) {
+				} else if (flagGetMaxShot || (this.typeCheck == 1 && shipEnemyMap.size() < 2)) {
 						for (Coordinate coordinate : showTurns) {
 							result.add(new int[] {coordinate.getX(), coordinate.getY()});
 							if(--maxShots <= 0) {
 								break;
+							}
+						}
+
+						if (maxShots > 0) { // maxShot still exist count for shot
+							List<Coordinate> neighborsCoordinate = this.makeShotNeighbors();
+							for (Coordinate coordinate : neighborsCoordinate) {
+								coordinate.setScore(boardEnemy[coordinate.getX()][coordinate.getY()]);
+							}
+							// sort 
+							neighborsCoordinate.sort((o1, o2) -> o2.getScore() - o1.getScore());
+							for (Coordinate coordinate : neighborsCoordinate) {
+								if (!showTurns.contains(coordinate)) {
+									result.add(new int[] { coordinate.getX(), coordinate.getY() });
+									if (--maxShots <= 0) {
+										break;
+									}
+								}
 							}
 						}
 				} else {
@@ -231,7 +246,7 @@ public class BotPlayer {
 					}
 				}
 
-				if(unshotNeighbors.size()==3) {
+				if (unshotNeighbors.size() == 3 && shipEnemyMap.containsKey(Ship.SHIP_OR)) {
 					if (shipEnemyMap.containsKey(Ship.SHIP_OR)) {
 						Coordinate coordinateA = unshotNeighbors.get(0);
 						Coordinate coordinateB = unshotNeighbors.get(1);
@@ -253,12 +268,24 @@ public class BotPlayer {
 							unshotNeighbors.remove(coordinateA);
 						}
 					}
-				}
-
-				if (unshotNeighbors.size()<= 3) {
-					flagGetMaxShot = true;
 				} else {
-					flagGetMaxShot = false;
+					flagGetMaxShot = true;
+					int minY = Math.min(first.getY(), second.getY());
+					int minX = Math.min(first.getY(), second.getY());
+					// remove 
+					unshotNeighborIters = unshotNeighbors.iterator();
+					while (unshotNeighborIters.hasNext()) {
+						Coordinate obj = unshotNeighborIters.next(); // must be called before you can call i.remove()
+						if (isVetical) {
+							if (obj.getY() == minY) {
+								unshotNeighborIters.remove();
+							}
+						} else {
+							if (obj.getX() == minX) {
+								unshotNeighborIters.remove();
+							}
+						}
+					}
 				}
 
 				return unshotNeighbors;
@@ -514,8 +541,7 @@ public class BotPlayer {
         	}
 		} 
 
-		if (neightBourTypeA.size() == 1 && this.maxShots >= 2
-				&& (shipEnemyMap.containsKey(Ship.SHIP_BB) || shipEnemyMap.containsKey(Ship.SHIP_CV))) {
+		if (neightBourTypeA.size() == 1 && this.maxShots >= 2 && (!shipEnemyMap.containsKey(Ship.SHIP_OR))) {
 			this.flagGetMaxShot = true;
 			
 			if (neightBourTypeA.contains(objMin)) {

@@ -374,6 +374,9 @@ public class BotServiceController {
 				fileName = enemyInfo.getEnemyPlayId() + "_shot_chimtau" + ".txt";
 				title = "==== chimtau shot "+ botPlayer.enemyPlayId +" Board (winer:" + botPlayer.winner +" -"+botPlayer.timeOut+") GameId: " +  sessionID;
 				GameUtil.writeBoardLog(title, enemyInfo.getEnemyPlaceShipBoard(), enemyInfo.getMyShotBoard(), botPlayer.boardWidth, botPlayer.boardHeight, fileName);
+			
+				//
+				botPlayerMap.remove(sessionID);
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
