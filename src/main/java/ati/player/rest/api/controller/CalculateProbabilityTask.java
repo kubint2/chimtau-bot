@@ -33,7 +33,6 @@ public class CalculateProbabilityTask implements Runnable
 	
 	@Override
 	public void run() {
-		//int count = 1;
 		while (true) {
 			Board board = new Board(width, heigh, coordinatesShotted);
 			shipEnemyMap.forEach((shipType, quanlity) -> {
@@ -47,8 +46,7 @@ public class CalculateProbabilityTask implements Runnable
 			for (Ship ship : board.getShips()) {
 				coordinates.addAll(ship.coordinates);
 			}
-			
-			
+
 			boolean flagContainHitShotted = true;
 			if (CollectionUtils.isNotEmpty(coordinatesHitShotted)) {
 				for (Coordinate coordinateHitShotted : coordinatesHitShotted) {

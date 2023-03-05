@@ -4,22 +4,31 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class GameConfig {
-	private Boolean flagCanPutOnBorder = null;
-    private Boolean flagCanHaveNeighbour = null;
+	private static final int TIME_OUT = 4000;
+
+	public Boolean flagPlaceShipDDCAOnBorder = false;
+    public Boolean flagPlaceShipOROnBorder = false;
+    private Boolean flagCanHaveNeighbour = false;
 	private Boolean flagPlaceVertical = null;
-	private static final int TIME_OUT = 500;
 	private int timeOut = TIME_OUT;
 	private boolean modeEasy = false;
 	
-
-	public Boolean getFlagCanPutOnBorder() {
-		return flagCanPutOnBorder;
+    public Boolean getFlagPlaceShipDDCAOnBorder() {
+		return flagPlaceShipDDCAOnBorder;
 	}
 
-	public void setFlagCanPutOnBorder(Boolean flagCanPutOnBorder) {
-		this.flagCanPutOnBorder = flagCanPutOnBorder;
+	public void setFlagPlaceShipDDCAOnBorder(Boolean flagPlaceShipDDCAOnBorder) {
+		this.flagPlaceShipDDCAOnBorder = flagPlaceShipDDCAOnBorder;
 	}
 
+	public Boolean getFlagPlaceShipOROnBorder() {
+		return flagPlaceShipOROnBorder;
+	}
+
+	public void setFlagPlaceShipOROnBorder(Boolean flagPlaceShipOROnBorder) {
+		this.flagPlaceShipOROnBorder = flagPlaceShipOROnBorder;
+	}
+	
 	public Boolean getFlagCanHaveNeighbour() {
 		return flagCanHaveNeighbour;
 	}

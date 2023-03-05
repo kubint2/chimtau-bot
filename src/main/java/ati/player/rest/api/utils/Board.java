@@ -16,16 +16,17 @@ public class Board {
     private int height;
     private char[][] grid;
     private List<Ship> ships;
-    public Boolean flagCanPutOnBorder = null;
+//    public Boolean flagCanPutOnBorder = null;
     public Boolean flagCanHaveNeighbour = null;
     public Boolean flagPlaceVertical = null;
+    public Boolean flagPlaceShipDDCAOnBorder = false;
+    public Boolean flagPlaceShipOROnBorder = false;
     
     int tryCountCheckNeghbour = 0;
     public static final char DOT = '.';
     private static final int MAX_TRY_COUNT = 300;
-
-    
-    
+    private static final int MIN_TRY_COUNT = 40;
+ 
     List<Coordinate> coordinatesShotted = new ArrayList<>();
     
     List<Coordinate> coordinatesPutted = new ArrayList<>();
@@ -70,9 +71,7 @@ public class Board {
         		grid[coordinate.getX()][coordinate.getY()] = 'x';
 			}
         }
-        
-        
-        this.flagCanPutOnBorder = null;
+
         this.flagCanHaveNeighbour = null;
     }
     
@@ -107,35 +106,29 @@ public class Board {
         return ships;
     }
     
-    public boolean validPlaceShip (List<Coordinate> coordinates) {
+    public boolean validPlaceShip (List<Coordinate> coordinates, int tryCount) {
     	for (Coordinate coordinate : coordinates) {
         	int colX = coordinate.getX();
         	int rowY = coordinate.getY();
             if (rowY < 0 || colX < 0 || rowY >= height || colX >= width) {
                 return false;
             }
-        	
-            if(this.flagCanPutOnBorder!= null && !this.flagCanPutOnBorder) {
-    			if (colX == 0 || colX == width - 1 || rowY == 0 || rowY == height - 1) {
-    				return false;
-    			}
-            }
 
     		if(grid[colX][rowY] != DOT ) {
     			return false ;
     		}
-    		
-            if (flagCanHaveNeighbour!=null && !flagCanHaveNeighbour && tryCountCheckNeghbour < 300) {
-            	List<Coordinate> neighbours = GameUtil.getCoordinateNeighbours(coordinate, width, height);
-            	if (CollectionUtils.isNotEmpty(coordinates)) {
-            		for (Coordinate neighbour : neighbours) {
-            			if(grid[neighbour.getX()][neighbour.getY()] != DOT) {
-                        	tryCountCheckNeghbour++;
-            				return false;
-            			}
+
+			if (flagCanHaveNeighbour != null && !flagCanHaveNeighbour && tryCount >= MIN_TRY_COUNT) {
+				List<Coordinate> neighbours = GameUtil.getCoordinateNeighbours(coordinate, width, height);
+				if (CollectionUtils.isNotEmpty(coordinates)) {
+					for (Coordinate neighbour : neighbours) {
+						if (grid[neighbour.getX()][neighbour.getY()] != DOT) {
+							tryCountCheckNeghbour++;
+							return false;
+						}
 					}
-            	}
-            }
+				}
+			}
 		}
     	return true;
     }
@@ -148,8 +141,6 @@ public class Board {
 		boolean vertical;
 
 		while (tryCount-- > 0) {
-			rowY = rand.nextInt(height);
-			colX = rand.nextInt(width);
 			//vertical = rand.nextBoolean();
 			if (this.flagPlaceVertical == null) {
 				vertical = rand.nextBoolean();
@@ -157,8 +148,29 @@ public class Board {
 				vertical = this.flagPlaceVertical;
 			}
 			ship.setVertical(vertical);
-			coordinates = new ArrayList<>();
+			
+			if (this.flagPlaceShipDDCAOnBorder != null && Boolean.valueOf(this.flagPlaceShipDDCAOnBorder)
+					&& (ship.typeDesc.equals(Ship.SHIP_DD) || ship.typeDesc.equals(Ship.SHIP_CA)) && tryCount >= MIN_TRY_COUNT) {
+				if(vertical) {
+					int[] arr = {0, this.width-1};
+					colX = arr[rand.nextInt(2)];
+					rowY = rand.nextInt(this.height-1-ship.getLength());
+				} else {
+					int[] arr = {0, this.height-1};
+					rowY = arr[rand.nextInt(2)];
+					colX = rand.nextInt(width-1-ship.getLength());
+				}
+			} else {
+				if(vertical) {
+					rowY = rand.nextInt(height-1-ship.getLength());
+					colX = rand.nextInt(width);
+				} else {
+					rowY = rand.nextInt(height);
+					colX = rand.nextInt(width-1-ship.getLength());	
+				}
+			}
 
+			coordinates = new ArrayList<>();
 			if (ship.isVertical()) {
 				for (int r = rowY; r < rowY + ship.getLength(); r++) {
 					coordinates.add(new Coordinate(colX, r));
@@ -169,7 +181,7 @@ public class Board {
 				}
 			}
 
-			if (!validPlaceShip(coordinates)) {
+			if (!validPlaceShip(coordinates, tryCount)) {
 				continue;
 			}
 
@@ -205,7 +217,7 @@ public class Board {
 				coordinates.add(new Coordinate(colX, rowY + 3));
 				coordinates.add(new Coordinate(colX - 1, rowY + 1));
 
-				if (!validPlaceShip(coordinates)) {
+				if (!validPlaceShip(coordinates, tryCount)) {
 					continue;
 				}
 				
@@ -222,7 +234,7 @@ public class Board {
 				coordinates.add(new Coordinate(colX + 4, rowY + 1));
 				coordinates.add(new Coordinate(colX + 2, rowY));
 
-				if (!validPlaceShip(coordinates)) {
+				if (!validPlaceShip(coordinates, tryCount)) {
 					continue;
 				}
 
@@ -240,8 +252,24 @@ public class Board {
 		int tryCount = MAX_TRY_COUNT;
 		
 		while (tryCount-- > 0) {
-			rowY = rand.nextInt(height - 1);
-			colX = rand.nextInt(width - 1);
+
+			if (this.flagPlaceShipOROnBorder != null && Boolean.valueOf(this.flagPlaceShipOROnBorder) && tryCount>= MIN_TRY_COUNT) {
+				boolean vetical = rand.nextBoolean();
+				if (vetical) {
+					int[] arr = { 0, this.width - 2 };
+					colX = arr[rand.nextInt(2)];
+					rowY = rand.nextInt(height - 1);
+					;
+				} else {
+					int[] arr = { 0, this.height - 2 };
+					rowY = arr[rand.nextInt(2)];
+					colX = rand.nextInt(width - 1);
+					;
+				}
+			} else {
+				rowY = rand.nextInt(height - 1);
+				colX = rand.nextInt(width - 1);
+			}
 
 			coordinates = new ArrayList<>();
 			coordinates.add(new Coordinate(colX,rowY));
@@ -249,7 +277,7 @@ public class Board {
 			coordinates.add(new Coordinate(colX,rowY+1));
 			coordinates.add(new Coordinate(colX+1,rowY+1));
 
-			if (!validPlaceShip(coordinates)) {
+			if (!validPlaceShip(coordinates, tryCount)) {
 				continue;
 			}
 
@@ -276,7 +304,6 @@ public class Board {
 				}
 
 				if (CollectionUtils.isEmpty(coordinates)) {
-					flagCanPutOnBorder = null;
 					flagCanHaveNeighbour = null;
 
 					

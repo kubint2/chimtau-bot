@@ -5,10 +5,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -47,7 +43,6 @@ import ati.player.rest.api.utils.Ship;
 
 
 @RestController
-// @RequestMapping("/api")
 public class BotServiceController {
 
 	private static final Logger logger = LogManager.getLogger(BotServiceController.class);	
@@ -57,8 +52,6 @@ public class BotServiceController {
 	private static final String RESULT_MISS = "MISS";
 	
 	private static final String BOT_ID = "chimtau";
-	
-	// public static final int TIME_OUT = 5000;
 
 	private Map<String, BotPlayer> botPlayerMap = new HashMap<>();
 
@@ -79,13 +72,8 @@ public class BotServiceController {
 			BotPlayer botPlayer = new BotPlayer(gameInviteReq.getBoardWidth(), gameInviteReq.getBoardHeight(), gameInviteReq.getShips());
 			String sessionID = request.getHeader("X-SESSION-ID");
 			botPlayerMap.put(sessionID, botPlayer);
-			
-			// botPlayer.initInstance(gameInviteReq.getBoardWidth(), gameInviteReq.getBoardHeight(), gameInviteReq.getShips());
-			// set response
-			response.setSuccess(true);
 
-			//
-			// calculateProbailityTask(botPlayer, 1000);
+			response.setSuccess(true);
 		} catch (Exception e) {
 			e.printStackTrace();
 			logger.error(e);
@@ -139,16 +127,15 @@ public class BotServiceController {
 					quantity--;
 				}
 			}
-			
+
 			board.flagPlaceVertical = gameConfig.getFlagPlaceVertical();
 			board.flagCanHaveNeighbour = gameConfig.getFlagCanHaveNeighbour();
-			board.flagCanPutOnBorder = gameConfig.getFlagCanPutOnBorder();
+			board.flagPlaceShipDDCAOnBorder = gameConfig.getFlagPlaceShipDDCAOnBorder();
+			board.flagPlaceShipOROnBorder = gameConfig.getFlagPlaceShipOROnBorder();
 			board.placeShipsRandomly();
 			board.print();
 			
 			List<ShipData> shipDatas = new ArrayList<>();
-			
-			board.getShips();
 			for (Ship ship : board.getShips()) {
 				ShipData shipData = new ShipData();
 				shipData.setType(ship.typeDesc);
@@ -296,12 +283,6 @@ public class BotServiceController {
 						}
 					}
 				}
-
-				// check hitList
-				//if (CollectionUtils.isEmpty(botPlayer.hitCoordinateList) || botPlayer.hitCoordinateList.size() > 5) {
-//				if(calculateProbabilityTask) {
-//					calculateProbailityTask(botPlayer, botPlayer.timeOut);
-//				}
 			} else {
 				botPlayer.enemyShotNo++; // for write log
 				// for write log enemy
@@ -322,20 +303,6 @@ public class BotServiceController {
 		return new ResponseEntity<NotifyResult>(response, HttpStatus.OK);
 	}
 
-//	private void calculateProbailityTask(BotPlayer botPlayer , int timeOut) throws InterruptedException {
-//		CalculateProbabilityTask task = new CalculateProbabilityTask(botPlayer.boardWidth,
-//				botPlayer.boardHeight, botPlayer.coordinatesShotted, botPlayer.hitCoordinateList, botPlayer.shipEnemyMap);
-//
-//		ScheduledExecutorService executor = Executors.newScheduledThreadPool(2);
-//		Future<?> future = executor.submit(task);
-//		Runnable cancelTask = () -> future.cancel(true);
-//		executor.schedule(cancelTask, timeOut, TimeUnit.MILLISECONDS);
-//		executor.shutdown();
-//		Thread.sleep(timeOut);
-//		
-//		botPlayer.boardEnemy = task.boardEnemy;
-//	}
-	
 	@ResponseBody
 	@RequestMapping(value = "/game-over", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<?> gameOver(@RequestBody GameOverRequest gameOverReq, HttpServletRequest request)
@@ -369,10 +336,10 @@ public class BotServiceController {
 				GameUtil.writeLogInfoTofile(fileName, enemyInfo);
 
 				fileName = enemyInfo.getEnemyPlayId() + ".txt";
-				String title = "==== "+ botPlayer.enemyPlayId +" shot My Board (winer:" + botPlayer.winner +" -"+botPlayer.timeOut+") GameId: " +  sessionID;
+				String title = java.time.LocalDateTime.now() +" ==== "+ botPlayer.enemyPlayId +" shot My Board (winer:" + botPlayer.winner +" -"+botPlayer.timeOut+") GameId: " +  sessionID;
 				GameUtil.writeBoardLog(title, enemyInfo.getMyPlaceShipBoard(), enemyInfo.getEnemyShotBoard(), botPlayer.boardWidth, botPlayer.boardHeight, fileName);
 				fileName = enemyInfo.getEnemyPlayId() + "_shot_chimtau" + ".txt";
-				title = "==== chimtau shot "+ botPlayer.enemyPlayId +" Board (winer:" + botPlayer.winner +" -"+botPlayer.timeOut+") GameId: " +  sessionID;
+				title = java.time.LocalDateTime.now() + "==== chimtau shot "+ botPlayer.enemyPlayId +" Board (winer:" + botPlayer.winner +" -"+botPlayer.timeOut+") GameId: " +  sessionID;
 				GameUtil.writeBoardLog(title, enemyInfo.getEnemyPlaceShipBoard(), enemyInfo.getMyShotBoard(), botPlayer.boardWidth, botPlayer.boardHeight, fileName);
 			
 				//
@@ -385,18 +352,4 @@ public class BotServiceController {
 		System.out.println("Response: game-over" + JsonUtil.objectToJson(response));
 		return new ResponseEntity<NotifyResult>(response, HttpStatus.OK);
 	}
-	
-	@ResponseBody
-	@RequestMapping(value = "/botPlayer", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-	public ResponseEntity<?> botPlayerStatus(HttpServletRequest request)
-			throws Exception {
-		String sessionID = request.getHeader("X-SESSION-ID");
-		BotPlayer botPlayer = botPlayerMap.get(sessionID);
-
-		System.out.println("Response: botPlayer" + JsonUtil.objectToJson(botPlayer));
-		return new ResponseEntity<BotPlayer>(botPlayer, HttpStatus.OK);
-	}
-	
-
-	
 }

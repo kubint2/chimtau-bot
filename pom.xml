@@ -222,25 +222,7 @@
 						<port>5001</port>
 					</httpConnector>
 				</configuration>
-				
-				  <dependencies>
-				    <dependency>
-				      <groupId>org.slf4j</groupId>
-				      <artifactId>slf4j-log4j12</artifactId>
-				      <version>1.6.4</version>
-				    </dependency>
-				  </dependencies>
 			</plugin>
-			<!-- 
-      <plugin>
-        <groupId>org.apache.tomcat.maven</groupId>
-        <artifactId>tomcat7-maven-plugin</artifactId>
-        <version>2.3-SNAPSHOT</version>
-        <configuration>
-          <server>myserver</server>
-        </configuration>
-      </plugin>
-      -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-war-plugin</artifactId>
