@@ -165,9 +165,9 @@ public class BotServiceController {
 			}
 
 			// TODO
-			if(!botPlayer.enemyPlayId.contains("bot")) {
-				Thread.sleep(15000);
-			}
+//			if(!botPlayer.enemyPlayId.contains("bot")) {
+//				Thread.sleep(15000);
+//			}
 		} catch (Exception e) {
 			e.printStackTrace();
 			logger.error(e);
