@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -68,9 +69,10 @@ public class BotServiceController {
 		logger.debug("invite requestInfo " + JsonUtil.objectToJson(gameInviteReq));
 
 		NotifyResult response = new NotifyResult();
+		String sessionID ="";
 		try {
 			BotPlayer botPlayer = new BotPlayer(gameInviteReq.getBoardWidth(), gameInviteReq.getBoardHeight(), gameInviteReq.getShips());
-			String sessionID = request.getHeader("X-SESSION-ID");
+			sessionID = request.getHeader("X-SESSION-ID");
 			botPlayerMap.put(sessionID, botPlayer);
 
 			response.setSuccess(true);
@@ -78,7 +80,7 @@ public class BotServiceController {
 			e.printStackTrace();
 			logger.error(e);
 		}
-		System.out.println("Response: invite" + JsonUtil.objectToJson(response));
+		System.out.println(sessionID + " Response: invite" + JsonUtil.objectToJson(response));
 		return new ResponseEntity<NotifyResult>(response, HttpStatus.OK);
 	}
 	
@@ -90,8 +92,9 @@ public class BotServiceController {
 		logger.debug("place-ships requestInfo " + JsonUtil.objectToJson(gamePlaceShipsRequest));
 		
 		GameStartResult response = new GameStartResult();
+		String sessionID  = "";
 		try {
-			String sessionID = request.getHeader("X-SESSION-ID");
+			sessionID = request.getHeader("X-SESSION-ID");
 			BotPlayer botPlayer = botPlayerMap.get(sessionID);
 
 			botPlayer.player1 = gamePlaceShipsRequest.getPlayer1();
@@ -113,7 +116,7 @@ public class BotServiceController {
 				}
 			}
 
-			if(gameConfig.getTimeOut() > 400 && gameConfig.getTimeOut() < 8000) {
+			if(gameConfig.getTimeOut() > 400 && gameConfig.getTimeOut() < 7500) {
 				botPlayer.timeOut = gameConfig.getTimeOut();
 			}
 			
@@ -161,11 +164,15 @@ public class BotServiceController {
 				}
 			}
 
+			// TODO
+			if(!botPlayer.enemyPlayId.contains("bot")) {
+				Thread.sleep(15000);
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
 			logger.error(e);
 		}
-		System.out.println("Response: place-ships" + JsonUtil.objectToJson(response));
+		System.out.println(sessionID + " Response: place-ships" + JsonUtil.objectToJson(response));
 		return new ResponseEntity<GameStartResult>(response, HttpStatus.OK);
 	}
 	
@@ -178,8 +185,9 @@ public class BotServiceController {
 		
 		GameTurnResult response = new GameTurnResult();
 		BotPlayer botPlayer = null;
+		String sessionID = "";
 		try {
-			String sessionID = request.getHeader("X-SESSION-ID");
+			sessionID = request.getHeader("X-SESSION-ID");
 			botPlayer = botPlayerMap.get(sessionID);
 			
 			botPlayer.maxShots = gameTurnReq.getMaxShots();
@@ -193,7 +201,7 @@ public class BotServiceController {
 			response.setCoordinates(List.of(new int[] {coordinate.getX(), coordinate.getY()}));
 			
 		}
-		System.out.println("Response: shot" + JsonUtil.objectToJson(response));
+		System.out.println(sessionID + " Response: shot" + JsonUtil.objectToJson(response));
 		return new ResponseEntity<GameTurnResult>(response, HttpStatus.OK);
 	}
 	
@@ -205,9 +213,10 @@ public class BotServiceController {
 		logger.debug("notify requestInfo " + JsonUtil.objectToJson(gameNotifyReq));
 		
 		NotifyResult response = new NotifyResult();
+		String sessionID = "";
 		try {
 			response.setSuccess(true);
-			String sessionID = request.getHeader("X-SESSION-ID");
+			sessionID = request.getHeader("X-SESSION-ID");
 			BotPlayer botPlayer = botPlayerMap.get(sessionID);
 
 			if(gameNotifyReq.getPlayerId().equalsIgnoreCase(BOT_ID)) {
@@ -222,9 +231,8 @@ public class BotServiceController {
 					Coordinate coordinateObj = new Coordinate(x, y);
 					
 					if(shotData.getStatus().equalsIgnoreCase(RESULT_HIT)) {
-						if (!botPlayer.hitCoordinateList.contains(coordinateObj)) {
-							botPlayer.hitCoordinateList.add(coordinateObj);
-						}
+						botPlayer.hitCoordinateList.add(coordinateObj);
+						botPlayer.hitCoordinateList = botPlayer.hitCoordinateList.stream().distinct().collect(Collectors.toList());
 						botPlayer.board[x][y]=2;
 
 						
@@ -293,13 +301,12 @@ public class BotServiceController {
 					int y = coordinate[1];
 					botPlayer.enemyShotNo2d[x][y] = botPlayer.enemyShotNo;
 				}
-				
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
 			logger.error(e);
 		}
-		System.out.println("Response: notify" + JsonUtil.objectToJson(response));
+		System.out.println(sessionID + " Response: notify" + JsonUtil.objectToJson(response));
 		return new ResponseEntity<NotifyResult>(response, HttpStatus.OK);
 	}
 
@@ -311,10 +318,11 @@ public class BotServiceController {
 		logger.debug("gameOver requestInfo " + JsonUtil.objectToJson(gameOverReq));
 		
 		NotifyResult response = new NotifyResult();
+		String sessionID = "";
 		try {
 			response.setSuccess(true);
 			
-			String sessionID = request.getHeader("X-SESSION-ID");
+			sessionID = request.getHeader("X-SESSION-ID");
 			BotPlayer botPlayer = botPlayerMap.get(sessionID);
 
 			botPlayer.winner = gameOverReq.getWinner();
@@ -349,7 +357,7 @@ public class BotServiceController {
 			e.printStackTrace();
 			logger.error(e);
 		}
-		System.out.println("Response: game-over" + JsonUtil.objectToJson(response));
+		System.out.println(sessionID + " Response: game-over" + JsonUtil.objectToJson(response));
 		return new ResponseEntity<NotifyResult>(response, HttpStatus.OK);
 	}
 }

@@ -163,7 +163,7 @@ public class BotPlayer {
 				showTurns.sort((o1, o2) -> o2.getScore() - o1.getScore());
 				if (this.maxShots < 2) {
 					result.add(new int[] { showTurns.get(0).getX(), showTurns.get(0).getY() });
-				} else if (flagGetMaxShot || shipEnemyMap.size() < 3) {
+				} else if (flagGetMaxShot || shipRemainCount <= 2) {
 						for (Coordinate coordinate : showTurns) {
 							result.add(new int[] {coordinate.getX(), coordinate.getY()});
 							if(--maxShots <= 0) {
@@ -219,16 +219,18 @@ public class BotPlayer {
 			List<Coordinate> neightBour2point = new ArrayList<>();
 			// check vertical
 			boolean isVetical = (first.getX() == second.getX());
-			if (shipEnemyMap.containsKey(Ship.SHIP_CA) || shipEnemyMap.containsKey(Ship.SHIP_BB)
-					|| shipEnemyMap.containsKey(Ship.SHIP_CV)) {
-				neightBour2point = getNeightBourTypeA(hitCoordinateList, isVetical);
-			}
+//			if (shipEnemyMap.containsKey(Ship.SHIP_CA) || shipEnemyMap.containsKey(Ship.SHIP_BB)
+//					|| shipEnemyMap.containsKey(Ship.SHIP_CV)) {
+//				neightBour2point = getNeightBourTypeA(hitCoordinateList, isVetical);
+//			}
+			neightBour2point = getNeightBourTypeA(hitCoordinateList, isVetical);
 
 			if (CollectionUtils.isNotEmpty(neightBour2point)) {
-				if (shipEnemyMap.containsKey(Ship.SHIP_BB)
-						|| shipEnemyMap.containsKey(Ship.SHIP_CV)) {
-					flagGetMaxShot = true;
-				}
+//				if (shipEnemyMap.containsKey(Ship.SHIP_BB)
+//						|| shipEnemyMap.containsKey(Ship.SHIP_CV)) {
+//					flagGetMaxShot = true;
+//				}
+				flagGetMaxShot = true;
 				return neightBour2point;
 			} else {
 				// Shot neightBour previousHit
@@ -309,23 +311,7 @@ public class BotPlayer {
 							neightBour4point.add(remainPoin);
 					}
 				} else {
-					List<Coordinate> listCoordinateInline = removeNonCollinearCoordinates(hitCoordinateList);
-					if ((listCoordinateInline.get(0).getX() == listCoordinateInline.get(1).getX())
-							&& (listCoordinateInline.get(0).getX() == listCoordinateInline.get(2).getX())) {
-						Coordinate maxCoordinateRowY = hitCoordinateList.stream()
-								.max(Comparator.comparing(Coordinate::getY)).orElseThrow(NoSuchElementException::new);
-						remainPoin = new Coordinate(maxCoordinateRowY.getX(), maxCoordinateRowY.getY() + 1);
-						if (isValidForShot(remainPoin)) {
-							neightBour4point.add(remainPoin);
-						}
-					} else {
-						Coordinate maxCoordinateColX = hitCoordinateList.stream()
-								.max(Comparator.comparing(Coordinate::getX)).orElseThrow(NoSuchElementException::new);
-						remainPoin = new Coordinate(maxCoordinateColX.getX() + 1, maxCoordinateColX.getY());
-						if (isValidForShot(remainPoin)) {
-							neightBour4point.add(remainPoin);
-						}
-					}
+					neightBour4point = findRemainCoordinateShipCV(this.hitCoordinateList);
 				}
 			}
 
@@ -378,9 +364,10 @@ public class BotPlayer {
 	        }
 			coordinate = coordinates.stream().max(Comparator.comparing(Coordinate::getScore))
 					.orElseThrow(NoSuchElementException::new);
-			if (coordinate != null) {
-				 System.out.println("MaxScore: " + JsonUtil.objectToJson(coordinate));
-					return coordinate;
+			if (coordinate != null && isValidForShot(coordinate)) {
+				System.out.println("makeSmartRandomShot.coordinates.size: " + coordinates.size());
+				System.out.println("makeSmartRandomShot.MaxScore: " + JsonUtil.objectToJson(coordinate));
+				return coordinate;
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -484,7 +471,7 @@ public class BotPlayer {
 			}
 		}
 
-		if (CollectionUtils.isEmpty(neightBourTypeA) && hitList.size() == 2) {
+		if (hitList.size() == 2) {
 			this.flagGetMaxShot = true;
 			Coordinate obj;
 			if (isVetical) {
@@ -566,26 +553,65 @@ public class BotPlayer {
         int yDiff = b.getY() - a.getY();
         return Math.sqrt(xDiff * xDiff + yDiff * yDiff);
     }
-    
-    public List<Coordinate> removeNonCollinearCoordinates(List<Coordinate> fourCoordinate) {
+
+    public List<Coordinate> findRemainCoordinateShipCV(List<Coordinate> fourCoordinate) {
         if (fourCoordinate.size() < 4) {
             return fourCoordinate;
         }
-        List<Coordinate> coordinates =  new ArrayList(fourCoordinate);
-        Coordinate first = coordinates.get(0);
-        double slope = (double) (coordinates.get(1).getY() - first.getY()) / (double) (coordinates.get(1).getX() - first.getX());
-        
-        for (int i = 2; i < coordinates.size(); i++) {
-            Coordinate current = coordinates.get(i);
-            double currentSlope = (double) (current.getY() - first.getY()) / (double) (current.getX() - first.getX());
-            
-            if (currentSlope != slope) {
-                coordinates.remove(current);
-            }
+
+        List<Coordinate> result = new ArrayList<>();
+        Coordinate CoordinateStartV = null;
+        Coordinate CoordinateStartH = null;
+        int countSameX = 0;
+        int countSameY = 0;
+        // tim điểm gốc
+		for (Coordinate coordinate : fourCoordinate) {
+			countSameX = 0;
+			countSameY = 0;
+			for (Coordinate coordinateCheck : fourCoordinate) {
+				// check same X
+				if (coordinateCheck.getX() == coordinate.getX()) {
+					countSameX++;
+				}
+				if (coordinateCheck.getY() == coordinate.getY()) {
+					countSameY++;
+				}
+			}
+			if (countSameX == 2 && countSameY == 1) {
+				CoordinateStartH = coordinate;
+				break;
+			} else if (countSameY == 2 && countSameX == 1) {
+				CoordinateStartV = coordinate;
+				break;
+			}
+		}
+		List<Coordinate> coordinatesShipCV = new ArrayList<>();
+        if (CoordinateStartV != null) {
+        	int colX = CoordinateStartV.getX();
+        	int rowY = CoordinateStartV.getY();
+			coordinatesShipCV.add(new Coordinate(colX, rowY));
+			coordinatesShipCV.add(new Coordinate(colX+1, rowY-1));
+			coordinatesShipCV.add(new Coordinate(colX+1, rowY));
+			coordinatesShipCV.add(new Coordinate(colX+1, rowY+1));
+			coordinatesShipCV.add(new Coordinate(colX+1, rowY+2));
         }
         
-        return coordinates;
+        if (CoordinateStartH != null) {
+        	int colX = CoordinateStartH.getX();
+        	int rowY = CoordinateStartH.getY();
+			coordinatesShipCV.add(new Coordinate(colX, rowY));
+			coordinatesShipCV.add(new Coordinate(colX-1, rowY+1));
+			coordinatesShipCV.add(new Coordinate(colX, rowY+1));
+			coordinatesShipCV.add(new Coordinate(colX+1, rowY+1));
+			coordinatesShipCV.add(new Coordinate(colX+2, rowY+1));
+        }
+        
+        for (Coordinate coordinate : coordinatesShipCV) {
+			if(isValidForShot(coordinate)) result.add(coordinate);
+		}
+        return result;
     }
+    
     
     public static void main(String[] args) {
         List<Coordinate> coordinates = List.of(
