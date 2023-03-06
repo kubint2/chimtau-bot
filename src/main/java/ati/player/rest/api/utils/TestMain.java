@@ -179,40 +179,41 @@ public class TestMain {
     private int[][] grid ;
 	
     
-    public static void main(String[] args) {
+    public static void main12(String[] args) {
     	
     	 System.out.println(java.time.LocalDateTime.now());    
     }
 	
-	public static void main1223(String[] args) throws InterruptedException {
+	public static void main(String[] args) throws InterruptedException {
 		List<Coordinate> coordinatesShotted = new ArrayList<>();
 		
 		int count = 1;
 		
 		int [][] boardEnemy = new int[20][8] ;
 		
-		int tryCount = 4000;
+		int tryCount = 8000;
 		int heigh = 8;
 		int width = 20;
 		
 		while (tryCount-- > 0) {
 			Board board = new Board(width, heigh, coordinatesShotted);
-			board.addShip(new Ship("DD"));
-			board.addShip(new Ship("DD"));
-			board.addShip(new Ship("CA"));
-			board.addShip(new Ship("CA"));
-			board.addShip(new Ship("BB"));
-			board.addShip(new Ship("BB"));
-			
 			board.addShip(new Ship("OR"));
 			board.addShip(new Ship("OR"));
-			
-			board.addShip(new Ship("CV"));
-			board.addShip(new Ship("CV"));
-			
+//			board.addShip(new Ship("DD"));
+//			board.addShip(new Ship("CA"));
+//			board.addShip(new Ship("CA"));
+//			board.addShip(new Ship("BB"));
+//			board.addShip(new Ship("BB"));
+//			
+//			board.addShip(new Ship("OR"));
+//			board.addShip(new Ship("OR"));
+//			
+//			board.addShip(new Ship("CV"));
+//			board.addShip(new Ship("CV"));
+			board.flagPlaceVertical = true;
 			// board.flagCanHaveNeighbour = false;
-			board.flagPlaceShipDDCAOnBorder = true;
-			board.flagPlaceShipOROnBorder = true;
+//			board.flagPlaceShipDDCAOnBorder = true;
+//			board.flagPlaceShipOROnBorder = true;
 			board.placeShipsRandomly();
 			board.print();
 			
@@ -230,7 +231,7 @@ public class TestMain {
 			}
 
 			System.out.println();
-			Thread.sleep(300);
+			//Thread.sleep(300);
 		}
 		
 		

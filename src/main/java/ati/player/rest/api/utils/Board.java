@@ -154,19 +154,19 @@ public class Board {
 				if(vertical) {
 					int[] arr = {0, this.width-1};
 					colX = arr[rand.nextInt(2)];
-					rowY = rand.nextInt(this.height-1-ship.getLength());
+					rowY = rand.nextInt(this.height-ship.getLength()+1);
 				} else {
 					int[] arr = {0, this.height-1};
 					rowY = arr[rand.nextInt(2)];
-					colX = rand.nextInt(width-1-ship.getLength());
+					colX = rand.nextInt(width-ship.getLength()+1);
 				}
 			} else {
 				if(vertical) {
-					rowY = rand.nextInt(height-1-ship.getLength());
+					rowY = rand.nextInt(height-ship.getLength()+1);
 					colX = rand.nextInt(width);
 				} else {
 					rowY = rand.nextInt(height);
-					colX = rand.nextInt(width-1-ship.getLength());	
+					colX = rand.nextInt(width-ship.getLength()+1);	
 				}
 			}
 
@@ -206,16 +206,16 @@ public class Board {
 			}
 
 			if (vertical) {
-				rowY = rand.nextInt(height - 4);
-				colX = ThreadLocalRandom.current().nextInt(1, width - 1);
+				rowY = rand.nextInt(height - 2);
+				colX = ThreadLocalRandom.current().nextInt(1, width);
 
 				// add coordinates
 				coordinates = new ArrayList<>();
-				coordinates.add(new Coordinate(colX, rowY)); //
-				coordinates.add(new Coordinate(colX, rowY + 1));
-				coordinates.add(new Coordinate(colX, rowY + 2));
-				coordinates.add(new Coordinate(colX, rowY + 3));
-				coordinates.add(new Coordinate(colX - 1, rowY + 1));
+				coordinates.add(new Coordinate(colX, rowY)); // 1
+				coordinates.add(new Coordinate(colX, rowY-1)); //2
+				coordinates.add(new Coordinate(colX, rowY+1)); //3
+				coordinates.add(new Coordinate(colX, rowY+2)); //4
+				coordinates.add(new Coordinate(colX - 1, rowY));  //5
 
 				if (!validPlaceShip(coordinates, tryCount)) {
 					continue;
@@ -224,15 +224,15 @@ public class Board {
 				return coordinates;
 
 			} else {
-				rowY = ThreadLocalRandom.current().nextInt(1, height - 1);
-				colX = rand.nextInt(width - 4);
+				rowY = ThreadLocalRandom.current().nextInt(0, height);
+				colX = rand.nextInt(width - 2);
 
 				coordinates = new ArrayList<>();
-				coordinates.add(new Coordinate(colX + 1, rowY + 1));
-				coordinates.add(new Coordinate(colX + 2, rowY + 1));
-				coordinates.add(new Coordinate(colX + 3, rowY + 1));
-				coordinates.add(new Coordinate(colX + 4, rowY + 1));
-				coordinates.add(new Coordinate(colX + 2, rowY));
+				coordinates.add(new Coordinate(colX,  rowY)); // 1
+				coordinates.add(new Coordinate(colX-1,rowY)); // 2
+				coordinates.add(new Coordinate(colX+1,rowY)); // 3
+				coordinates.add(new Coordinate(colX+2,rowY)); // 4
+				coordinates.add(new Coordinate(colX,rowY-1)); // 5
 
 				if (!validPlaceShip(coordinates, tryCount)) {
 					continue;
