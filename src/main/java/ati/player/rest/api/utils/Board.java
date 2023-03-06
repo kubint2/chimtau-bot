@@ -224,7 +224,7 @@ public class Board {
 				return coordinates;
 
 			} else {
-				rowY = ThreadLocalRandom.current().nextInt(0, height);
+				rowY = ThreadLocalRandom.current().nextInt(1, height);
 				colX = rand.nextInt(width - 2);
 
 				coordinates = new ArrayList<>();

@@ -197,8 +197,8 @@ public class TestMain {
 		
 		while (tryCount-- > 0) {
 			Board board = new Board(width, heigh, coordinatesShotted);
-			board.addShip(new Ship("OR"));
-			board.addShip(new Ship("OR"));
+			board.addShip(new Ship("CV"));
+			board.addShip(new Ship("CV"));
 //			board.addShip(new Ship("DD"));
 //			board.addShip(new Ship("CA"));
 //			board.addShip(new Ship("CA"));
