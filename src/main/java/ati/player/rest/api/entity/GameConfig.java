@@ -4,13 +4,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class GameConfig {
-	private static final int TIME_OUT = 4000;
-
 	public Boolean flagPlaceShipDDCAOnBorder = false;
     public Boolean flagPlaceShipOROnBorder = false;
     private Boolean flagCanHaveNeighbour = false;
 	private Boolean flagPlaceVertical = null;
-	private int timeOut = TIME_OUT;
+	private int timeOut = 1000;
 	private boolean modeEasy = false;
 	
     public Boolean getFlagPlaceShipDDCAOnBorder() {

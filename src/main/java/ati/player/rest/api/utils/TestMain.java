@@ -261,13 +261,13 @@ public class TestMain {
 		 shipEnemyMap.put(Ship.SHIP_CV, 2);
 		 shipEnemyMap.put(Ship.SHIP_OR, 2);
 		
-		CalculateProbabilityTask task = new CalculateProbabilityTask(20,8, new ArrayList<>(), new ArrayList<>() ,shipEnemyMap);
+		CalculateProbabilityTask task = new CalculateProbabilityTask(20,8,500, new ArrayList<>(), new ArrayList<>() ,shipEnemyMap);
 		
-		Future<?> future = executor.submit(task);
-		Runnable cancelTask = () -> future.cancel(true);
-		executor.schedule(cancelTask, 5000, TimeUnit.MILLISECONDS);
-		executor.shutdown();
-		Thread.sleep(5000);
+//		Future<?> future = executor.submit(task);
+//		Runnable cancelTask = () -> future.cancel(true);
+//		executor.schedule(cancelTask, 5000, TimeUnit.MILLISECONDS);
+//		executor.shutdown();
+//		Thread.sleep(5000);
 		
 		int [][] boardEnemy = task.boardEnemy;
 		List<Coordinate> coordinates = new ArrayList<>();

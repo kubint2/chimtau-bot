@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -93,9 +94,10 @@ public class BotServiceController {
 		
 		GameStartResult response = new GameStartResult();
 		String sessionID  = "";
+		BotPlayer botPlayer = null;
 		try {
 			sessionID = request.getHeader("X-SESSION-ID");
-			BotPlayer botPlayer = botPlayerMap.get(sessionID);
+			botPlayer = botPlayerMap.get(sessionID);
 
 			botPlayer.player1 = gamePlaceShipsRequest.getPlayer1();
 			botPlayer.player2 = gamePlaceShipsRequest.getPlayer2();
@@ -116,7 +118,7 @@ public class BotServiceController {
 				}
 			}
 
-			if(gameConfig.getTimeOut() > 400 && gameConfig.getTimeOut() < 7500) {
+			if(gameConfig.getTimeOut() > 400 && gameConfig.getTimeOut() < 3000) {
 				botPlayer.timeOut = gameConfig.getTimeOut();
 			}
 			
@@ -164,14 +166,11 @@ public class BotServiceController {
 				}
 			}
 
-			// TODO
-//			if(!botPlayer.enemyPlayId.contains("bot")) {
-//				Thread.sleep(15000);
-//			}
 		} catch (Exception e) {
 			e.printStackTrace();
 			logger.error(e);
 		}
+
 		System.out.println(sessionID + " Response: place-ships" + JsonUtil.objectToJson(response));
 		return new ResponseEntity<GameStartResult>(response, HttpStatus.OK);
 	}
@@ -194,6 +193,7 @@ public class BotServiceController {
 
 			response.setCoordinates(botPlayer.getShotsTurnResult());
 
+			System.out.println(sessionID + " === Hit List : " + JsonUtil.objectToJson(botPlayer.hitCoordinateList));
 		} catch (Exception e) {
 			e.printStackTrace();
 			logger.error(e);
@@ -222,6 +222,8 @@ public class BotServiceController {
 			if(gameNotifyReq.getPlayerId().equalsIgnoreCase(BOT_ID)) {
 				botPlayer.myShotNo++; // for write log
 				List<ShotData> shotResult = gameNotifyReq.getShots();
+				
+				List<Coordinate> hitCoordidatesRespone = new ArrayList<>();
 				for (ShotData shotData : shotResult) {
 					int[] coordinate = shotData.getCoordinate();
 					int x = coordinate[0];
@@ -231,8 +233,9 @@ public class BotServiceController {
 					Coordinate coordinateObj = new Coordinate(x, y);
 					
 					if(shotData.getStatus().equalsIgnoreCase(RESULT_HIT)) {
-						botPlayer.hitCoordinateList.add(coordinateObj);
-						botPlayer.hitCoordinateList = botPlayer.hitCoordinateList.stream().distinct().collect(Collectors.toList());
+//						botPlayer.hitCoordinateList.add(coordinateObj);
+//						botPlayer.hitCoordinateList = botPlayer.hitCoordinateList.stream().distinct().collect(Collectors.toList());
+						hitCoordidatesRespone.add(coordinateObj);
 						botPlayer.board[x][y]=2;
 
 						
@@ -242,6 +245,51 @@ public class BotServiceController {
 						botPlayer.coordinatesShotted.add(coordinateObj);
 					}
 				}
+				
+				//
+				if(CollectionUtils.isNotEmpty(hitCoordidatesRespone)) {
+					if(hitCoordidatesRespone.size() == 1) {
+						botPlayer.hitCoordinateList.add(hitCoordidatesRespone.get(0));
+					} else {
+//						botPlayer.hitCoordinateList.add(hitCoordidatesRespone.get(0));
+//						hitCoordidatesRespone.remove(hitCoordidatesRespone.get(0));
+						botPlayer.hitListTemp.addAll(hitCoordidatesRespone);
+					}
+						
+					if(botPlayer.hitCoordinateList.size() == 0 && botPlayer.hitListTemp.size() > 0) {
+						botPlayer.hitCoordinateList.add(botPlayer.hitListTemp.get(0));
+						botPlayer.hitListTemp.remove(botPlayer.hitListTemp.get(0));
+					}
+
+					//check and merge hitList & hitlistTemp
+					if (botPlayer.hitListTemp.size() > 0) {
+						ListIterator<Coordinate> iter = botPlayer.hitListTemp.listIterator();
+						while(iter.hasNext()){
+							Coordinate hitTemp = iter.next();
+							List<Coordinate> neighboursHit = botPlayer.getNeighbors(hitTemp);
+							
+							boolean neighbourInHitList = false;
+							for (Coordinate neighbour : neighboursHit) {
+								if(botPlayer.hitCoordinateList.contains(neighbour)) {
+									neighbourInHitList = true;
+									break;
+								}
+							}
+							if(neighbourInHitList) {
+								botPlayer.hitCoordinateList.add(hitTemp);
+								botPlayer.hitListTemp.remove(hitTemp);
+							}
+						}
+					}
+
+					botPlayer.hitCoordinateList = botPlayer.hitCoordinateList.stream().distinct().collect(Collectors.toList());
+				}
+				
+				if(botPlayer.hitCoordinateList.size() == 0 && botPlayer.hitListTemp.size() > 0) {
+					botPlayer.hitCoordinateList.add(botPlayer.hitListTemp.get(0));
+					botPlayer.hitListTemp.remove(botPlayer.hitListTemp.get(0));
+				}
+
 				// in case sunk ship data or [ ]
 				if(CollectionUtils.isNotEmpty(gameNotifyReq.getSunkShips())) {
 					botPlayer.shipRemainCount--;
@@ -259,9 +307,15 @@ public class BotServiceController {
 							Coordinate coordinateObj = new Coordinate(coordinate[0], coordinate[1]);
 
 							botPlayer.hitCoordinateList.remove(coordinateObj);
+							botPlayer.hitListTemp.remove(coordinateObj);
 							botPlayer.coordinatesShotted.add(coordinateObj);
 						}
 
+						if (botPlayer.hitCoordinateList.size() == 0 && botPlayer.hitListTemp.size() != 0) {
+							botPlayer.hitCoordinateList.add(botPlayer.hitListTemp.get(0));
+							botPlayer.hitListTemp.remove(hitCoordidatesRespone.get(0));
+						}
+	
 						botPlayer.resetCalculator();
 						
 						// for write log

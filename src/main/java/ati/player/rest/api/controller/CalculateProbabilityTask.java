@@ -10,7 +10,7 @@ import ati.player.rest.api.entity.Coordinate;
 import ati.player.rest.api.utils.Board;
 import ati.player.rest.api.utils.Ship;
 
-public class CalculateProbabilityTask implements Runnable
+public class CalculateProbabilityTask // implements Runnable
 {
 	public int [][] boardEnemy ;
 	List<Coordinate> coordinatesShotted;
@@ -19,21 +19,23 @@ public class CalculateProbabilityTask implements Runnable
 	int width;
 	int heigh;
 	public int count=0;
+	public int timeOut = 500;
 	
 	
-	public CalculateProbabilityTask (int width, int heigh, List<Coordinate> coordinatesShotted, List<Coordinate> coordinatesHitShotted, Map<String, Integer> shipEnemyMap) {
+	public CalculateProbabilityTask (int width, int heigh, int timeOut, List<Coordinate> coordinatesShotted, List<Coordinate> coordinatesHitShotted, Map<String, Integer> shipEnemyMap) {
 		this.width = width;
 		this.heigh = heigh;
 		this.boardEnemy = new int[width][heigh] ;
 		this.coordinatesShotted = coordinatesShotted;
 		this.coordinatesHitShotted = coordinatesHitShotted;
 		this.shipEnemyMap = shipEnemyMap;
-		
+		this.timeOut = timeOut;
 	}
 	
-	@Override
-	public void run() {
-		while (true) {
+	// @Override
+	public int[][] run() {
+		
+		while (this.timeOut-->0) {
 			Board board = new Board(width, heigh, coordinatesShotted);
 			shipEnemyMap.forEach((shipType, quanlity) -> {
 				while (quanlity-- > 0) {
@@ -59,17 +61,23 @@ public class CalculateProbabilityTask implements Runnable
 			if (!flagContainHitShotted) {
 				continue;
 			}
-			
-//			board.print();
-//			System.out.println(" =======  COUNT :" + count++);
 
 			for (Coordinate coordinate : coordinates) {
 				boardEnemy[coordinate.getX()][coordinate.getY()]+=1;
 			}
 
-			if (Thread.interrupted()) {
-				return;
-			}
+
+			board.print();
+			System.out.println(" =======  COUNT :" + count++);
 		}
+		
+		return boardEnemy;
+	}
+	
+	public static void main(String args[]) {
+		
+		
+		
+		
 	}
 }
