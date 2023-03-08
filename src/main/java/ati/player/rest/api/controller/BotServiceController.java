@@ -298,7 +298,7 @@ public class BotServiceController {
 							}
 							if(neighbourInHitList) {
 								botPlayer.hitCoordinateList.add(hitTemp);
-								botPlayer.hitListTemp.remove(hitTemp);
+								iter.remove();
 							}
 						}
 					}

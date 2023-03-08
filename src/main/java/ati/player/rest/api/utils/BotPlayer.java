@@ -5,6 +5,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Random;
@@ -150,7 +151,7 @@ public class BotPlayer {
 			}
 		} 
 
-		if (flagGetMaxShot || maxShots > 1) {
+		if (flagGetMaxShot || maxShots > 2) {
 			for (Coordinate coordinate : showTurns) {
 				result.add(new int[] { coordinate.getX(), coordinate.getY() });
 				if (--maxShots <= 0) {
@@ -160,7 +161,7 @@ public class BotPlayer {
 			if (maxShots > 0) { // maxShot still exist count for shot
 				Coordinate randomShot;
 				while (maxShots-- > 0) {
-					int tryCount = 20;
+					int tryCount = 30;
 					do {
 						if (tryCount-- > 0) {
 							randomShot = makeSmartRandomShot(); // makeSmartRandomShot()();
@@ -378,7 +379,9 @@ public class BotPlayer {
 
         // notify shotted
 		this.board[x][y] = 1;
-        return new Coordinate(x, y);
+		Coordinate coordinate = new Coordinate(x, y);
+		this.coordinatesShotted.add(coordinate);
+        return coordinate;
     }
     
     
@@ -403,6 +406,7 @@ public class BotPlayer {
     		priorityShotsList.remove(prioritycoordinate);
     		if(isValidForShot(prioritycoordinate)) {
 				this.board[prioritycoordinate.getX()][prioritycoordinate.getY()] = 1;
+				this.coordinatesShotted.add(prioritycoordinate);
         		return  prioritycoordinate;
     		}
     	}
@@ -426,13 +430,15 @@ public class BotPlayer {
 						.orElseThrow(NoSuchElementException::new);
 				if (maxScrore != null) {
 					this.board[maxScrore.getX()][maxScrore.getY()] = 1;
+					this.coordinatesShotted.add(maxScrore);
 					return maxScrore;
 				}
 			}
 		}
 
 		// check shot border
-		if(thresholdCheck < thresholdShotBorder || (this.myShotNo > maxShotNoCheckDD &&  shipEnemyMap.containsKey(Ship.SHIP_DD))) {
+		// this.myShotNo > maxShotNoCheckDD &&  shipEnemyMap.containsKey(Ship.SHIP_DD)
+		if(thresholdCheck < thresholdShotBorder ) {
 			cordinates = new ArrayList<>();
 			cordinates = this.getCoordinatesBorder();
 			for (Coordinate coordinate : cordinates) {
@@ -446,6 +452,7 @@ public class BotPlayer {
 						.orElseThrow(NoSuchElementException::new);
 				if (maxScrore != null) {
 					this.board[maxScrore.getX()][maxScrore.getY()] = 1;
+					this.coordinatesShotted.add(maxScrore);
 					return maxScrore;
 				}
 			}
@@ -471,6 +478,7 @@ public class BotPlayer {
 					.orElseThrow(NoSuchElementException::new);
 			if (maxScrore != null) {
 				this.board[maxScrore.getX()][maxScrore.getY()] = 1;
+				this.coordinatesShotted.add(maxScrore);
 				return maxScrore;
 			}
 		}
@@ -610,6 +618,7 @@ public class BotPlayer {
 			objMax = new Coordinate(colX, maxRowY + 1);
 			if (isValidForShot(objMax)) {
 				neightBourTypeA.add(objMax);
+				// return neightBourTypeA; // return
 			}
 			objMin = new Coordinate(colX, minRowY - 1);
 			if (isValidForShot(objMin)) {
@@ -623,19 +632,19 @@ public class BotPlayer {
 
 			int rowY = hitList.get(0).getY();
 			// validate
-			objMin = new Coordinate(minColX - 1, rowY);
-			boolean containShipCABBCV = true;
-			if (containShipCABBCV && isValidForShot(objMin)) {
-				neightBourTypeA.add(objMin);
-			}
 			objMax = new Coordinate(maxColX + 1, rowY);
-			if (containShipCABBCV && isValidForShot(objMax)) {
+			if (isValidForShot(objMax)) {
 				neightBourTypeA.add(objMax);
+				// return neightBourTypeA; // return
+			}
+			objMin = new Coordinate(minColX - 1, rowY);
+			if (isValidForShot(objMin)) {
+				neightBourTypeA.add(objMin);
 			}
 		}
 
-		if (typeCheck == 2 && CollectionUtils.isEmpty(neightBourTypeA)) {
-			this.flagGetMaxShot = true;
+		// check ship OR
+		if (hitCoordinateList.size() == 2 && neightBourTypeA.size() <= 1) {
 			Coordinate obj;
 			if (isVetical) {
 				Coordinate objMax2 = hitList.stream().max(Comparator.comparing(Coordinate::getY))
@@ -643,6 +652,7 @@ public class BotPlayer {
 				obj = new Coordinate(objMax2.getX() - 1, objMax2.getY());
 				if (isValidForShot(obj)) {
 					neightBourTypeA.add(obj);
+					return neightBourTypeA; // return
 				}
 				obj = new Coordinate(objMax2.getX() + 1, objMax2.getY());
 				if (isValidForShot(obj)) {
@@ -654,6 +664,7 @@ public class BotPlayer {
 				obj = new Coordinate(objMax2.getX(), objMax2.getY() - 1);
 				if (isValidForShot(obj)) {
 					neightBourTypeA.add(obj);
+					return neightBourTypeA; // return
 				}
 				obj = new Coordinate(objMax2.getX(), objMax2.getY() + 1);
 				if (isValidForShot(obj)) {
@@ -848,6 +859,20 @@ public class BotPlayer {
 		listShip.add(List.of(new Coordinate(x, y), new Coordinate(x, y + 1)));
 		listShip.add(List.of(new Coordinate(x, y - 1), new Coordinate(x, y)));
 		
+		if (CollectionUtils.isNotEmpty(this.hitCoordinateList)) {
+			ListIterator<List<Coordinate>> iter = listShip.listIterator();
+			while (iter.hasNext()) {
+				List<Coordinate> ship = iter.next();
+				boolean flagContainHitList = false;
+				if (ship.stream().anyMatch(coordinate -> this.hitCoordinateList.contains(coordinate))) {
+					flagContainHitList = true;
+				}
+				if (!flagContainHitList) {
+					iter.remove();
+				}
+			}
+		}
+		
 		for (List<Coordinate> list : listShip) {
 			if(!list.stream().anyMatch(coordinate -> !isCellNotInShotted(coordinate))) {
 				score+=coutShip;
@@ -865,6 +890,21 @@ public class BotPlayer {
 		listShip.add(List.of(new Coordinate(x, y), new Coordinate(x, y + 1), new Coordinate(x, y + 2)));
 		listShip.add(List.of(new Coordinate(x, y - 1), new Coordinate(x, y), new Coordinate(x, y + 1)));
 		listShip.add(List.of(new Coordinate(x, y - 2), new Coordinate(x, y - 1), new Coordinate(x, y)));
+		
+		if (CollectionUtils.isNotEmpty(this.hitCoordinateList)) {
+			ListIterator<List<Coordinate>> iter = listShip.listIterator();
+			while (iter.hasNext()) {
+				List<Coordinate> ship = iter.next();
+				boolean flagContainHitList = false;
+				if (ship.stream().anyMatch(coordinate -> this.hitCoordinateList.contains(coordinate))) {
+					flagContainHitList = true;
+				}
+				if (!flagContainHitList) {
+					iter.remove();
+				}
+			}
+		}
+
 		for (List<Coordinate> list : listShip) {
 			if(!list.stream().anyMatch(coordinate -> !isCellNotInShotted(coordinate))) {
 				score+=coutShip;
@@ -884,6 +924,21 @@ public class BotPlayer {
 		listShip.add(List.of(new Coordinate(x, y-1), new Coordinate(x, y), new Coordinate(x, y+1), new Coordinate(x, y+2)));
 		listShip.add(List.of(new Coordinate(x, y-2), new Coordinate(x, y-1), new Coordinate(x, y), new Coordinate(x, y+1)));
 		listShip.add(List.of(new Coordinate(x, y-3), new Coordinate(x, y-2), new Coordinate(x, y-1), new Coordinate(x, y)));
+		
+		if (CollectionUtils.isNotEmpty(this.hitCoordinateList)) {
+			ListIterator<List<Coordinate>> iter = listShip.listIterator();
+			while (iter.hasNext()) {
+				List<Coordinate> ship = iter.next();
+				boolean flagContainHitList = false;
+				if (ship.stream().anyMatch(coordinate -> this.hitCoordinateList.contains(coordinate))) {
+					flagContainHitList = true;
+				}
+				if (!flagContainHitList) {
+					iter.remove();
+				}
+			}
+		}
+
 		for (List<Coordinate> list : listShip) {
 			if(!list.stream().anyMatch(coordinate -> !isCellNotInShotted(coordinate))) {
 				score+=coutShip;
@@ -903,6 +958,21 @@ public class BotPlayer {
 		listShip.add(List.of(new Coordinate(x, y-1), new Coordinate(x, y), new Coordinate(x, y+1), new Coordinate(x, y+2), new Coordinate(x-1, y))  );
 		listShip.add(List.of(new Coordinate(x, y-2), new Coordinate(x, y-1), new Coordinate(x, y), new Coordinate(x, y+1), new Coordinate(x-1, y-1)));
 		listShip.add(List.of(new Coordinate(x, y-3), new Coordinate(x, y-2), new Coordinate(x, y-1), new Coordinate(x, y), new Coordinate(x-1, y-2)));
+		
+		if (CollectionUtils.isNotEmpty(this.hitCoordinateList)) {
+			ListIterator<List<Coordinate>> iter = listShip.listIterator();
+			while (iter.hasNext()) {
+				List<Coordinate> ship = iter.next();
+				boolean flagContainHitList = false;
+				if (ship.stream().anyMatch(coordinate -> this.hitCoordinateList.contains(coordinate))) {
+					flagContainHitList = true;
+				}
+				if (!flagContainHitList) {
+					iter.remove();
+				}
+			}
+		}
+
 		for (List<Coordinate> list : listShip) {
 			if(!list.stream().anyMatch(coordinate -> !isCellNotInShotted(coordinate))) {
 				score+=coutShip;
@@ -918,6 +988,21 @@ public class BotPlayer {
 		listShip.add(List.of(new Coordinate(x, y), new Coordinate(x-1, y), new Coordinate(x, y+1), new Coordinate(x-1, y-1)));
 		listShip.add(List.of(new Coordinate(x, y), new Coordinate(x-1, y), new Coordinate(x-1, y-1), new Coordinate(x, y-1)));
 		listShip.add(List.of(new Coordinate(x, y), new Coordinate(x+1, y), new Coordinate(x, y-1), new Coordinate(x-1, y-1)));
+		
+		if (CollectionUtils.isNotEmpty(this.hitCoordinateList)) {
+			ListIterator<List<Coordinate>> iter = listShip.listIterator();
+			while (iter.hasNext()) {
+				List<Coordinate> ship = iter.next();
+				boolean flagContainHitList = false;
+				if (ship.stream().anyMatch(coordinate -> this.hitCoordinateList.contains(coordinate))) {
+					flagContainHitList = true;
+				}
+				if (!flagContainHitList) {
+					iter.remove();
+				}
+			}
+		}
+
 		for (List<Coordinate> list : listShip) {
 			if(!list.stream().anyMatch(coordinate -> !isCellNotInShotted(coordinate))) {
 				score+=coutShip;
