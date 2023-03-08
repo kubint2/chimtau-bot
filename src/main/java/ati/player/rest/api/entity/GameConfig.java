@@ -8,6 +8,11 @@ public class GameConfig {
 	public int thresholdShotBorder = 10; // max 60
 	public int maxThresholdShot = 100;
 	public int maxShotNoCheckDD = 70;
+	public int minScoreShotConnerThreshold = 0;
+
+	public int maxShipDDonCorner = 0;
+    public int maxShipORonCorner = 0;
+	
 	
 	
 	public Boolean flagPlaceShipDDCAOnBorder = false;
@@ -17,6 +22,13 @@ public class GameConfig {
 	private int timeOut = 1000;
 	private boolean modeEasy = false;
 	
+	public int getMinScoreShotConnerThreshold() {
+		return minScoreShotConnerThreshold;
+	}
+
+	public void setMinScoreShotConnerThreshold(int minScoreShotConnerThreshold) {
+		this.minScoreShotConnerThreshold = minScoreShotConnerThreshold;
+	}
 	public int getMaxShotNoCheckDD() {
 		return maxShotNoCheckDD;
 	}
@@ -114,6 +126,22 @@ public class GameConfig {
 
 	public void setModeEasy(boolean modeEasy) {
 		this.modeEasy = modeEasy;
+	}
+	
+    public int getMaxShipDDonCorner() {
+		return maxShipDDonCorner;
+	}
+
+	public void setMaxShipDDonCorner(int maxShipDDonCorner) {
+		this.maxShipDDonCorner = maxShipDDonCorner;
+	}
+
+	public int getMaxShipORonCorner() {
+		return maxShipORonCorner;
+	}
+
+	public void setMaxShipORonCorner(int maxShipORonCorner) {
+		this.maxShipORonCorner = maxShipORonCorner;
 	}
 
 	private List<int[]> ignorePlaceShip = new ArrayList<>() ;

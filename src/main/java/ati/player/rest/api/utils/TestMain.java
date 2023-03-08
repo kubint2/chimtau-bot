@@ -134,26 +134,17 @@ public class TestMain {
 	}
 	
 	
-	public static void main19(String[] args) throws InterruptedException {
+	public static void main(String[] args) throws InterruptedException {
 		
 		while (true) {
 			Board board = new Board(20, 8);
 			board.flagPlaceShipDDCAOnBorder = true;
 			board.flagPlaceShipOROnBorder = true;
 			board.addShip(new Ship("OR"));
-			board.addShip(new Ship("OR"));
-			board.addShip(new Ship("CA"));
-			board.addShip(new Ship("CA"));
-			board.addShip(new Ship("DD"));
-			board.addShip(new Ship("DD"));
-			board.addShip(new Ship("OR"));
-			board.addShip(new Ship("OR"));
-			board.addShip(new Ship("CA"));
-			board.addShip(new Ship("CA"));
-			board.addShip(new Ship("DD"));
-			board.addShip(new Ship("DD"));
+			board.maxShipORonCorner =0;
+			board.maxShipDDonCorner =0;
 			
-//			board.addShip(new Ship("DD"));
+			board.addShip(new Ship("DD"));
 //			//board.addShip(new Ship("DD"));
 //			board.addShip(new Ship("CA"));
 //			//board.addShip(new Ship("CA"));
@@ -184,7 +175,7 @@ public class TestMain {
     	 System.out.println(java.time.LocalDateTime.now());    
     }
 	
-	public static void main(String[] args) throws InterruptedException {
+	public static void mainxx(String[] args) throws InterruptedException {
 		List<Coordinate> coordinatesShotted = new ArrayList<>();
 		
 		int count = 1;

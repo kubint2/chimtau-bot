@@ -137,6 +137,9 @@ public class BotServiceController {
 			board.flagCanHaveNeighbour = gameConfig.getFlagCanHaveNeighbour();
 			board.flagPlaceShipDDCAOnBorder = gameConfig.getFlagPlaceShipDDCAOnBorder();
 			board.flagPlaceShipOROnBorder = gameConfig.getFlagPlaceShipOROnBorder();
+			board.maxShipDDonCorner=gameConfig.getMaxShipDDonCorner();
+			board.maxShipORonCorner=gameConfig.getMaxShipORonCorner();
+			
 			board.placeShipsRandomly();
 			board.print();
 			
@@ -155,6 +158,9 @@ public class BotServiceController {
 			botPlayer.thresholdShotConner = gameConfig.thresholdShotConner;
 			botPlayer.maxThresholdShot = gameConfig.maxThresholdShot;
 			botPlayer.maxShotNoCheckDD = gameConfig.maxShotNoCheckDD;
+			botPlayer.minScoreShotConnerThreshold = gameConfig.minScoreShotConnerThreshold;
+			
+			
 			List<Coordinate> priorityCoordinates = new ArrayList<>();
 			if(CollectionUtils.isNotEmpty(gameConfig.getPriorityShotsList())) {
 				for (int[] coordinateArr : gameConfig.getPriorityShotsList()) {
@@ -183,11 +189,11 @@ public class BotServiceController {
 			e.printStackTrace();
 			logger.error(e);
 		}
-		if(botPlayer.modeEasy) {
-			if(!botPlayer.enemyPlayId.contains("bot")) {
-				throw new Exception("===================================TEST=============");
-			}
-		}
+//		if(botPlayer.modeEasy) {
+//			if(!botPlayer.enemyPlayId.contains("bot")) {
+//				throw new Exception("===================================TEST=============");
+//			}
+//		}
 		System.out.println(sessionID + " Response: place-ships" + JsonUtil.objectToJson(response));
 		return new ResponseEntity<GameStartResult>(response, HttpStatus.OK);
 	}

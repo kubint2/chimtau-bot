@@ -399,6 +399,7 @@ public class BotPlayer {
     
     public List<Coordinate> priorityShotsList = new ArrayList<>();
     public boolean checkPriorityFlag = true;
+    public int minScoreShotConnerThreshold = 0;
     
 	public Coordinate makeSmartRandomShot() {
     	if (CollectionUtils.isNotEmpty(priorityShotsList)) {
@@ -423,7 +424,7 @@ public class BotPlayer {
 					cordinates.add(coordinate);
 				}
 			}
-			cordinates = cordinates.stream().filter(o -> o.getScore() > 0).collect(Collectors.toList()); 
+			cordinates = cordinates.stream().filter(o -> o.getScore() > minScoreShotConnerThreshold).collect(Collectors.toList()); 
 			if (CollectionUtils.isNotEmpty(cordinates)) {
 				cordinates.sort((o1, o2) -> o2.getScore() - o1.getScore());
 				Coordinate maxScrore = cordinates.stream().max(Comparator.comparing(Coordinate::getScore))
@@ -445,7 +446,7 @@ public class BotPlayer {
 				coordinate.setScore(this.getScoreCoordinate(coordinate.getX(), coordinate.getY(), this.shipEnemyMap));
 			}
 
-			cordinates = cordinates.stream().filter(o -> o.getScore() > 0).collect(Collectors.toList()); 
+			cordinates = cordinates.stream().filter(o -> o.getScore() > minScoreShotConnerThreshold).collect(Collectors.toList()); 
 			if (CollectionUtils.isNotEmpty(cordinates)) {
 				cordinates.sort((o1, o2) -> o2.getScore() - o1.getScore());
 				Coordinate maxScrore = cordinates.stream().max(Comparator.comparing(Coordinate::getScore))

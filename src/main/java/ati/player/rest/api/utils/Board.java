@@ -20,7 +20,6 @@ public class Board {
     public Boolean flagCanHaveNeighbour = null;
     public Boolean flagPlaceVertical = null;
     public Boolean flagPlaceShipDDCAOnBorder = false;
-    public Boolean flagPlaceShipOROnBorder = false;
     
     int tryCountCheckNeghbour = 0;
     public static final char DOT = '.';
@@ -133,6 +132,9 @@ public class Board {
     	return true;
     }
     
+    
+    public int maxShipDDonCorner = 0;
+    public int maxShipORonCorner = 0;
 	public List<Coordinate> placeShipDDCABB(Ship ship) {
 		Random rand = new Random();
 		int rowY, colX;
@@ -149,8 +151,22 @@ public class Board {
 			}
 			ship.setVertical(vertical);
 			
-			if (this.flagPlaceShipDDCAOnBorder != null && Boolean.valueOf(this.flagPlaceShipDDCAOnBorder)
-					&& (ship.typeDesc.equals(Ship.SHIP_DD) || ship.typeDesc.equals(Ship.SHIP_CA)) && tryCount >= MIN_TRY_COUNT) {
+			if(ship.typeDesc.equals(Ship.SHIP_DD) && maxShipDDonCorner>0) {
+				if(vertical) {
+					int[] arrX = {0, this.width-1};
+					colX = arrX[rand.nextInt(2)];
+					int[] arrY = {0, this.height-1-1};
+					rowY = arrY[rand.nextInt(2)];
+				} else {
+					int[] arrX = {0, this.width-1-1};
+					colX = arrX[rand.nextInt(2)];
+					int[] arrY = {0, this.height-1};
+					rowY = arrY[rand.nextInt(2)];
+				}
+				maxShipDDonCorner--;
+
+			} else if (this.flagPlaceShipDDCAOnBorder != null && Boolean.valueOf(this.flagPlaceShipDDCAOnBorder)
+					&& ship.typeDesc.equals(Ship.SHIP_DD) && tryCount >= MIN_TRY_COUNT) {
 				if(vertical) {
 					int[] arr = {0, this.width-1};
 					colX = arr[rand.nextInt(2)];
@@ -244,6 +260,7 @@ public class Board {
 		return null;
     }
 
+    public Boolean flagPlaceShipOROnBorder = null;
 	private List<Coordinate> placeShipOR(Ship ship) {
 		int rowY;
 		int colX;
@@ -253,18 +270,22 @@ public class Board {
 		
 		while (tryCount-- > 0) {
 
-			if (this.flagPlaceShipOROnBorder != null && Boolean.valueOf(this.flagPlaceShipOROnBorder) && tryCount>= MIN_TRY_COUNT) {
+			if(maxShipORonCorner > 0) {
+				int arrX[] = {0,this.width - 2};
+				colX = arrX[rand.nextInt(2)];
+				int arrY[] = {0,this.height-2};
+				rowY = arrY[rand.nextInt(2)];
+				maxShipORonCorner--;
+			} else if (this.flagPlaceShipOROnBorder != null && Boolean.valueOf(this.flagPlaceShipOROnBorder) && tryCount>= MIN_TRY_COUNT) {
 				boolean vetical = rand.nextBoolean();
 				if (vetical) {
 					int[] arr = { 0, this.width - 2 };
 					colX = arr[rand.nextInt(2)];
 					rowY = rand.nextInt(height - 1);
-					;
 				} else {
 					int[] arr = { 0, this.height - 2 };
 					rowY = arr[rand.nextInt(2)];
 					colX = rand.nextInt(width - 1);
-					;
 				}
 			} else {
 				rowY = rand.nextInt(height - 1);
