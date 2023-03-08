@@ -121,7 +121,7 @@ public class BotServiceController {
 			if(gameConfig.getTimeOut() > 400 && gameConfig.getTimeOut() < 3000) {
 				botPlayer.timeOut = gameConfig.getTimeOut();
 			}
-			
+
 			botPlayer.modeEasy = gameConfig.getModeEasy();
 			// set response
 			Board board = new Board(botPlayer.boardWidth, botPlayer.boardHeight, coordinatesShotted);
@@ -150,6 +150,19 @@ public class BotServiceController {
 
 			response.setShips(shipDatas);
 
+			// for random shot
+			botPlayer.thresholdShotBorder = gameConfig.thresholdShotBorder;
+			botPlayer.thresholdShotConner = gameConfig.thresholdShotConner;
+			botPlayer.maxThresholdShot = gameConfig.maxThresholdShot;
+			botPlayer.maxShotNoCheckDD = gameConfig.maxShotNoCheckDD;
+			List<Coordinate> priorityCoordinates = new ArrayList<>();
+			if(CollectionUtils.isNotEmpty(gameConfig.getPriorityShotsList())) {
+				for (int[] coordinateArr : gameConfig.getPriorityShotsList()) {
+					priorityCoordinates.add(new Coordinate(coordinateArr[0], coordinateArr[1]));
+				}
+				botPlayer.priorityShotsList = priorityCoordinates;
+			}
+			
 			// for write log
 			botPlayer.enemyShotNo2d = new int[botPlayer.boardWidth][botPlayer.boardHeight];
 			botPlayer.myShotNoArr2d = new int[botPlayer.boardWidth][botPlayer.boardHeight];
@@ -170,7 +183,11 @@ public class BotServiceController {
 			e.printStackTrace();
 			logger.error(e);
 		}
-
+		if(botPlayer.modeEasy) {
+			if(!botPlayer.enemyPlayId.contains("bot")) {
+				throw new Exception("===================================TEST=============");
+			}
+		}
 		System.out.println(sessionID + " Response: place-ships" + JsonUtil.objectToJson(response));
 		return new ResponseEntity<GameStartResult>(response, HttpStatus.OK);
 	}

@@ -9,10 +9,10 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Random;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.commons.collections.CollectionUtils;
 
-import ati.player.rest.api.controller.CalculateProbabilityTask;
 import ati.player.rest.api.entity.Coordinate;
 import ati.player.rest.api.entity.ShipData;
 import ati.player.rest.api.request.ShipRequest;
@@ -69,8 +69,14 @@ public class BotPlayer {
 		
 		// init board
 		this.board = new int[width][height];
-		this.boardEnemy = new int[width][height];
+		this.boardEnemyScore = new int[width][height];
 
+		conerCodinates = List.of(
+	    		new Coordinate(0, 0),
+	    		new Coordinate(this.boardWidth-1, 0),
+	    		new Coordinate(this.boardWidth-1, this.boardHeight-1),
+	    		new Coordinate(0, this.boardHeight-1)
+	    		);
 	}
 
 	// implement 
@@ -83,7 +89,7 @@ public class BotPlayer {
     public Map<String, Integer> shipEnemyMap = new HashMap<>();
 	public int shipRemainCount;
 
-	private int [][] boardEnemy ;
+	private int [][] boardEnemyScore ;
     
     public List<Coordinate> coordinatesShotted = new ArrayList<>();
     boolean flagGetMaxShot = false;
@@ -93,9 +99,9 @@ public class BotPlayer {
     	previousHit = null;
     }
 
-	private void calculateProbailityTask() throws InterruptedException {
-		CalculateProbabilityTask task = new CalculateProbabilityTask(this.boardWidth, this.timeOut,
-				this.boardHeight, this.coordinatesShotted, this.hitCoordinateList, this.shipEnemyMap);
+	private int[][] calculateProbailityTask()  {
+//		CalculateProbabilityTask task = new CalculateProbabilityTask(this.boardWidth, this.timeOut, this.boardHeight,
+//				this.coordinatesShotted, this.hitCoordinateList, this.shipEnemyMap);
 
 //		ScheduledExecutorService executor = Executors.newScheduledThreadPool(2);
 //		Future<?> future = executor.submit(task);
@@ -103,7 +109,18 @@ public class BotPlayer {
 //		executor.schedule(cancelTask, this.timeOut, TimeUnit.MILLISECONDS);
 //		executor.shutdown();
 //		Thread.sleep(this.timeOut);.
-		this.boardEnemy = task.run();
+//		this.boardEnemy = task.run();
+
+		// other way
+		int[][] boardEnemyScore = new int[this.boardWidth][this.boardHeight];
+		for (int y = 0; y < this.boardHeight; y++) {
+			for (int x = 0; x < this.boardWidth; x++) {
+				this.boardEnemyScore[x][y] = this.getScoreCoordinate(x, y, this.shipEnemyMap);
+			}
+			// System.out.println();
+		}
+
+		return boardEnemyScore;
 	}
     
 	public List<int[]> getShotsTurnResult() {
@@ -167,37 +184,29 @@ public class BotPlayer {
 			return result;
 		}
 		
-		result.add(new int[] { showTurns.get(0).getX(), showTurns.get(0).getY() });
-		return result;
 		
-		/*
-		if (1 <= typeCheck && typeCheck < 5) {
-			result.add(new int[] { showTurns.get(0).getX(), showTurns.get(0).getY() });
-			return result;
+		
+		// calculator
+		List<Coordinate> cordinates = showTurns;
+		for (Coordinate coordinate : cordinates) {
+			coordinate.setScore(this.getScoreCoordinate(coordinate.getX(), coordinate.getY(), this.shipEnemyMap));
 		}
 
-		// other
-		// sort score
-		try {
-			this.calculateProbailityTask();
-			for (Coordinate coordinate : showTurns) {
-				coordinate.setScore(boardEnemy[coordinate.getX()][coordinate.getY()]);
-			}
-			Coordinate maxScrore = showTurns.stream().max(Comparator.comparing(Coordinate::getScore)).orElseThrow(NoSuchElementException::new);
-			if(maxScrore!= null) {
-				result.add(new int[] {maxScrore.getX(), maxScrore.getY()});
+		if (CollectionUtils.isNotEmpty(cordinates)) {
+			cordinates.sort((o1, o2) -> o2.getScore() - o1.getScore());
+			Coordinate maxScrore = cordinates.stream().max(Comparator.comparing(Coordinate::getScore))
+					.orElseThrow(NoSuchElementException::new);
+			if (maxScrore != null) {
+				this.board[maxScrore.getX()][maxScrore.getY()] = 1;
+				result.add(new int[] { maxScrore.getX(), maxScrore.getY() });
 				return result;
 			}
-		} catch (Exception e) {
-			e.printStackTrace();
 		}
-
-		// nothing todo
-		Coordinate randomShot = makeRandomShot();
+		
+		// other else
+		Coordinate randomShot = makeSmartRandomShot();
 		result.add(new int[] { randomShot.getX(), randomShot.getY() });
-
 		return result;
-		*/
 	}
 	
 
@@ -240,7 +249,6 @@ public class BotPlayer {
 				typeCheck = 5;
 				return makeShotNeighbors(this.hitCoordinateList);
 			}
-
 		} else if (hitCoordinateList.size() == 3) {
 			typeCheck = 3;
 			
@@ -298,7 +306,7 @@ public class BotPlayer {
 						}
 					}
 				} else if (shipCvHor.containsAll(this.hitCoordinateList)) {
-					this.flagGetMaxShot = true;
+					// this.flagGetMaxShot = true;
 					for (Coordinate coordinate : shipCvHor) {
 						if(!this.hitCoordinateList.contains(coordinate) && isValidForShot(coordinate)) {
 							neightBour3point.add(coordinate);
@@ -380,90 +388,132 @@ public class BotPlayer {
         return new Coordinate(x, y);
     }
     
-	public Coordinate makeSmartRandomShot() {
-		//int countAdd = this.maxShots;// this.maxShots;
-		int tryCount;
-		List<Coordinate> result = new ArrayList<>();
-//		if (this.myShotNo < 50) {
-//			tryCount = 50;
-//			while (tryCount-- > 0) {
-//				Coordinate coordinateRandom = makeRandomShot();
-//				List<Coordinate> neighbours = getNeighbors(coordinateRandom);
-//
-//				boolean flagExistNeighbourShotted = false;
-//				for (Coordinate neighbour : neighbours) {
-//					if (board[neighbour.getX()][neighbour.getY()] > 0) {
-//						flagExistNeighbourShotted = true;
-//						break;
-//					}
-//				}
-//				if (flagExistNeighbourShotted) {
-//					continue;
-//				} else {
-//					return coordinateRandom;
-//				}
-//			}
-//		}
-		
-		//if (this.shipEnemyMap.containsKey(Ship.SHIP_DD) || this.myShotNo < 50) {
-			tryCount = 120;
-			List<Coordinate> cordinates = new ArrayList<>();
-			List<Coordinate> neighbourCells;
-			while (tryCount-- > 0) {
-				Coordinate coordinateRandom = this.makeRandomShot();
-				if (cordinates.contains(coordinateRandom))
-					continue;
+    
+	public int thresholdShotConner = 1; // max 60
+	public int thresholdShotBorder = 10; // max 60
+	public int maxThresholdShot = 100;
+	public int maxShotNoCheckDD = 70;
 
-				neighbourCells = getNeighbors(coordinateRandom);
-				int score = neighbourCells.size();
-				for (Coordinate neighbour : neighbourCells) {
-					if (board[neighbour.getX()][neighbour.getY()] > 0) {
-						score -= 1;
-					}
+    private List<Coordinate> conerCodinates = List.of(
+    		new Coordinate(0, 0),
+    		new Coordinate(this.boardWidth-1, 0),
+    		new Coordinate(this.boardWidth-1, this.boardHeight-1),
+    		new Coordinate(0, this.boardHeight-1)
+    		);
+    
+    public List<Coordinate> priorityShotsList = new ArrayList<>();
+    
+	public Coordinate makeSmartRandomShot() {
+    	if (CollectionUtils.isNotEmpty(priorityShotsList)) {
+    		Coordinate prioritycoordinate = priorityShotsList.get(0);
+    		priorityShotsList.remove(prioritycoordinate);
+    		if(isValidForShot(prioritycoordinate)) {
+        		return  prioritycoordinate;
+    		}
+    	}
+
+		List<Coordinate> cordinates;
+		Random rand = new Random();
+		int thresholdCheck = rand.nextInt(maxThresholdShot); // random number
+		
+		if (thresholdCheck < thresholdShotConner) {
+			cordinates = new ArrayList<>();
+			for (Coordinate coordinate : conerCodinates) {
+				if(isValidForShot(coordinate)) {
+					coordinate.setScore(this.getScoreCoordinate(coordinate.getX(), coordinate.getY(), this.shipEnemyMap));
+					cordinates.add(coordinate);
 				}
-				coordinateRandom.setScore(score);
-				if (score == 0) {
-					return coordinateRandom;
+			}
+			cordinates = cordinates.stream().filter(o -> o.getScore() > 0).collect(Collectors.toList()); 
+			if (CollectionUtils.isNotEmpty(cordinates)) {
+				cordinates.sort((o1, o2) -> o2.getScore() - o1.getScore());
+				Coordinate maxScrore = cordinates.stream().max(Comparator.comparing(Coordinate::getScore))
+						.orElseThrow(NoSuchElementException::new);
+				if (maxScrore != null) {
+					this.board[maxScrore.getX()][maxScrore.getY()] = 1;
+					return maxScrore;
 				}
-				cordinates.add(coordinateRandom);
+			}
+		}
+
+		// check shot border
+		if(thresholdCheck < thresholdShotBorder || (this.myShotNo > maxShotNoCheckDD &&  shipEnemyMap.containsKey(Ship.SHIP_DD))) {
+			cordinates = new ArrayList<>();
+			cordinates = this.getCoordinatesBorder();
+			for (Coordinate coordinate : cordinates) {
+				coordinate.setScore(this.getScoreCoordinate(coordinate.getX(), coordinate.getY(), this.shipEnemyMap));
 			}
 
+			cordinates = cordinates.stream().filter(o -> o.getScore() > 0).collect(Collectors.toList()); 
+			if (CollectionUtils.isNotEmpty(cordinates)) {
+				cordinates.sort((o1, o2) -> o2.getScore() - o1.getScore());
+				Coordinate maxScrore = cordinates.stream().max(Comparator.comparing(Coordinate::getScore))
+						.orElseThrow(NoSuchElementException::new);
+				if (maxScrore != null) {
+					this.board[maxScrore.getX()][maxScrore.getY()] = 1;
+					return maxScrore;
+				}
+			}
+		}
+		
+		// ELSE MAIN
+		// calculator random board
+		cordinates = new ArrayList<>();
+		Coordinate coordinate;
+		for (int y = 0; y < this.boardHeight; y++) {
+			for (int x = 0; x < this.boardWidth; x++) {
+				coordinate = new Coordinate(x, y);
+				if(this.isValidForShot(coordinate)) {
+					coordinate.setScore(this.getScoreCoordinate(x, y, this.shipEnemyMap));
+					cordinates.add(coordinate);
+				}
+			}
+		}
+		
+		if (CollectionUtils.isNotEmpty(cordinates)) {
 			cordinates.sort((o1, o2) -> o2.getScore() - o1.getScore());
 			Coordinate maxScrore = cordinates.stream().max(Comparator.comparing(Coordinate::getScore))
 					.orElseThrow(NoSuchElementException::new);
 			if (maxScrore != null) {
+				this.board[maxScrore.getX()][maxScrore.getY()] = 1;
 				return maxScrore;
 			}
-		//  }
-		// }
-
-		// sort score
-		/*
-		try {
-			this.calculateProbailityTask();
-			List<Coordinate> cordinates = new ArrayList<>();
-			for (int x = 0; x < this.boardWidth; x++) {
-				for (int y = 0; y < this.boardHeight; y++) {
-					if(board[x][y] == 0) {
-						cordinates.add(new Coordinate(x, y, this.boardEnemy[x][y]));
-					}
-				}
-			}
-	
-			cordinates.sort((o1, o2) -> o2.getScore() - o1.getScore());
-			Coordinate maxScrore = cordinates.stream().max(Comparator.comparing(Coordinate::getScore)).orElseThrow(NoSuchElementException::new);
-			if(maxScrore!= null) {
-				return maxScrore;
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
 		}
-		*/
 
 		return makeRandomShot();
 	}
     
-    public List<Coordinate> makeShotNeighbors(Coordinate shot) {
+    private List<Coordinate> getCoordinatesBorder() {
+    	List<Coordinate> result= new ArrayList<>();
+    	Coordinate coordinate;
+    	// add y
+    	for(int y=0; y<this.boardWidth; y++) {
+    		coordinate = new Coordinate(0, y);
+			if (isValidForShot(coordinate)) {
+				result.add(coordinate);
+			}
+			coordinate = new Coordinate(this.boardHeight-1, y);
+			if (isValidForShot(coordinate)) {
+				result.add(coordinate);
+			}
+    	}
+    	// add x
+    	for(int x=1; x<this.boardHeight-1; x++) {
+    		coordinate = new Coordinate(x, 0);
+			if (isValidForShot(coordinate)) {
+				result.add(coordinate);
+			}
+			coordinate = new Coordinate(x, this.boardWidth-1);
+			if (isValidForShot(coordinate)) {
+				result.add(coordinate);
+			}
+    	}
+
+		return result;
+	}
+
+
+	public List<Coordinate> makeShotNeighbors(Coordinate shot) {
         Set<Coordinate> neighborCells = new HashSet<>();
         int x = shot.getX();
         int y = shot.getY();
@@ -731,16 +781,153 @@ public class BotPlayer {
     }
     
     
-    public static void main(String[] args) {
-        List<Coordinate> coordinates = List.of(
-                new Coordinate(6, 3),
-                new Coordinate(6, 4),
-                new Coordinate(5, 4)
-            );
-//        === Hit List : [{"x":6,"y":3,"score":0},{"x":6,"y":4,"score":0},{"x":5,"y":5,"score":0}]
-//        		=== Type Check: 3= Shots Output: [{"x":5,"y":4,"score":119},{"x":7,"y":4,"score":98}]
-        
-        System.out.println( JsonUtil.objectToJson(findSquareCorner(coordinates)));
+    public static void main(String args[]) {
+    	BotPlayer botPlayer =  new BotPlayer(20,8, new ArrayList<>());
+
+    	botPlayer.shipEnemyMap = new HashMap<>();
+    	botPlayer.shipEnemyMap.put("DD", 1);
+    	botPlayer.shipEnemyMap.put("CA", 1);
+    	botPlayer.shipEnemyMap.put("OR", 1);
+    	botPlayer.shipEnemyMap.put("BB", 1);
+    	botPlayer.shipEnemyMap.put("CV", 1);
+    	
+    	botPlayer.coordinatesShotted.add(new Coordinate(0, 0));
+
+    	int[][] board =	new int[botPlayer.boardWidth][botPlayer.boardHeight];
+      	StringBuffer sb = new StringBuffer();
+    	sb.append("==== Title :" + "");
+    	sb.append("\n");
+    	
+        for (int y = 0; y < botPlayer.boardHeight; y++) {
+        	for (int x = 0; x < botPlayer.boardWidth; x++) {
+        		board[x][y] = botPlayer.getScoreCoordinate(x, y, botPlayer.shipEnemyMap);
+            	sb.append(board[x][y] + " (" + ")\t");
+            }
+            sb.append("\n");
+            // System.out.println();
+        }
+        System.out.println(sb.toString());
     }
     
+	public boolean isCellNotInShotted(Coordinate shot) {
+		try {
+			if (shot.getX() >= boardWidth || shot.getY() >= boardHeight || shot.getX() < 0 || shot.getY() < 0) {
+				return false;
+			}
+			if (!this.coordinatesShotted.contains(shot)) {
+				return true;
+			} else {
+				return false;
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			return false;
+		}
+	}
+    
+    private int getScoreCoordinate(int x, int y, Map<String, Integer> shipEnemyMap) {
+    	int score = 0;
+    	if(shipEnemyMap.containsKey(Ship.SHIP_DD)) {
+    		score+= getScoreShipDD(x, y, shipEnemyMap.get(Ship.SHIP_DD));
+    	}
+    	if(shipEnemyMap.containsKey(Ship.SHIP_CA)) {
+    		score+= getScoreShipCA(x, y, shipEnemyMap.get(Ship.SHIP_CA));
+    	}
+    	if(shipEnemyMap.containsKey(Ship.SHIP_OR)) {
+    		score+= getScoreShipOR(x, y, shipEnemyMap.get(Ship.SHIP_OR));
+    	}
+    	if(shipEnemyMap.containsKey(Ship.SHIP_BB)) {
+    		score+= getScoreShipBB(x, y, shipEnemyMap.get(Ship.SHIP_BB));
+    	}
+    	if(shipEnemyMap.containsKey(Ship.SHIP_CV)) {
+    		score+= getScoreShipCV(x, y, shipEnemyMap.get(Ship.SHIP_CV));
+    	}
+		return score;
+    }
+    
+    public int getScoreShipDD(int x, int y, int coutShip) {
+		int score = 0;
+		List<List<Coordinate>> listShip = new ArrayList<>();
+		listShip.add(List.of(new Coordinate(x, y), new Coordinate(x + 1, y)));
+		listShip.add(List.of(new Coordinate(x - 1, y), new Coordinate(x, y)));
+		listShip.add(List.of(new Coordinate(x, y), new Coordinate(x, y + 1)));
+		listShip.add(List.of(new Coordinate(x, y - 1), new Coordinate(x, y)));
+		
+		for (List<Coordinate> list : listShip) {
+			if(!list.stream().anyMatch(coordinate -> !isCellNotInShotted(coordinate))) {
+				score+=coutShip;
+			}
+		}
+    	return score;
+    }
+    
+    public int getScoreShipCA(int x, int y, int coutShip) {
+		int score = 0;
+		List<List<Coordinate>> listShip = new ArrayList<>();
+		listShip.add(List.of(new Coordinate(x, y), new Coordinate(x + 1, y), new Coordinate(x + 2, y)));
+		listShip.add(List.of(new Coordinate(x - 1, y), new Coordinate(x, y), new Coordinate(x + 1, y)));
+		listShip.add(List.of(new Coordinate(x - 2, y), new Coordinate(x - 1, y), new Coordinate(x, y)));
+		listShip.add(List.of(new Coordinate(x, y), new Coordinate(x, y + 1), new Coordinate(x, y + 2)));
+		listShip.add(List.of(new Coordinate(x, y - 1), new Coordinate(x, y), new Coordinate(x, y + 1)));
+		listShip.add(List.of(new Coordinate(x, y - 2), new Coordinate(x, y - 1), new Coordinate(x, y)));
+		for (List<Coordinate> list : listShip) {
+			if(!list.stream().anyMatch(coordinate -> !isCellNotInShotted(coordinate))) {
+				score+=coutShip;
+			}
+		}
+    	return score;
+    }
+    
+    public int getScoreShipBB(int x, int y, int coutShip) {
+		int score = 0;
+		List<List<Coordinate>> listShip = new ArrayList<>();
+		listShip.add(List.of(new Coordinate(x, y), new Coordinate(x+1, y), new Coordinate(x+2, y), new Coordinate(x+3, y)));
+		listShip.add(List.of(new Coordinate(x-1, y), new Coordinate(x, y), new Coordinate(x+1, y), new Coordinate(x+2, y)));
+		listShip.add(List.of(new Coordinate(x-2, y), new Coordinate(x-1, y), new Coordinate(x, y), new Coordinate(x+1, y)));
+		listShip.add(List.of(new Coordinate(x-3, y), new Coordinate(x-2, y), new Coordinate(x-1, y), new Coordinate(x, y)));
+		listShip.add(List.of(new Coordinate(x, y), new Coordinate(x, y+1), new Coordinate(x, y+2), new Coordinate(x, y+3)));
+		listShip.add(List.of(new Coordinate(x, y-1), new Coordinate(x, y), new Coordinate(x, y+1), new Coordinate(x, y+2)));
+		listShip.add(List.of(new Coordinate(x, y-2), new Coordinate(x, y-1), new Coordinate(x, y), new Coordinate(x, y+1)));
+		listShip.add(List.of(new Coordinate(x, y-3), new Coordinate(x, y-2), new Coordinate(x, y-1), new Coordinate(x, y)));
+		for (List<Coordinate> list : listShip) {
+			if(!list.stream().anyMatch(coordinate -> !isCellNotInShotted(coordinate))) {
+				score+=coutShip;
+			}
+		}
+    	return score;
+    }
+    
+    public int getScoreShipCV(int x, int y, int coutShip) {
+		int score = 0;
+		List<List<Coordinate>> listShip = new ArrayList<>();
+		listShip.add(List.of(new Coordinate(x, y), new Coordinate(x+1, y), new Coordinate(x+2, y), new Coordinate(x+3, y), new Coordinate(x+1, y-1))); 
+		listShip.add(List.of(new Coordinate(x-1, y), new Coordinate(x, y), new Coordinate(x+1, y), new Coordinate(x+2, y), new Coordinate(x, y-1))  );
+		listShip.add(List.of(new Coordinate(x-2, y), new Coordinate(x-1, y), new Coordinate(x, y), new Coordinate(x+1, y), new Coordinate(x-1, y-1)));
+		listShip.add(List.of(new Coordinate(x-3, y), new Coordinate(x-2, y), new Coordinate(x-1, y), new Coordinate(x, y), new Coordinate(x-2, y-1)));
+		listShip.add(List.of(new Coordinate(x, y), new Coordinate(x, y+1), new Coordinate(x, y+2), new Coordinate(x, y+3), new Coordinate(x-1, y+1)));
+		listShip.add(List.of(new Coordinate(x, y-1), new Coordinate(x, y), new Coordinate(x, y+1), new Coordinate(x, y+2), new Coordinate(x-1, y))  );
+		listShip.add(List.of(new Coordinate(x, y-2), new Coordinate(x, y-1), new Coordinate(x, y), new Coordinate(x, y+1), new Coordinate(x-1, y-1)));
+		listShip.add(List.of(new Coordinate(x, y-3), new Coordinate(x, y-2), new Coordinate(x, y-1), new Coordinate(x, y), new Coordinate(x-1, y-2)));
+		for (List<Coordinate> list : listShip) {
+			if(!list.stream().anyMatch(coordinate -> !isCellNotInShotted(coordinate))) {
+				score+=coutShip;
+			}
+		}
+		return score;	
+    }
+   
+    public int getScoreShipOR(int x, int y, int coutShip) {
+		int score = 0;
+		List<List<Coordinate>> listShip = new ArrayList<>();
+		listShip.add(List.of(new Coordinate(x, y), new Coordinate(x, y+1), new Coordinate(x+1, y+1), new Coordinate(x+1, y+1)));
+		listShip.add(List.of(new Coordinate(x, y), new Coordinate(x-1, y), new Coordinate(x, y+1), new Coordinate(x-1, y-1)));
+		listShip.add(List.of(new Coordinate(x, y), new Coordinate(x-1, y), new Coordinate(x-1, y-1), new Coordinate(x, y-1)));
+		listShip.add(List.of(new Coordinate(x, y), new Coordinate(x+1, y), new Coordinate(x, y-1), new Coordinate(x-1, y-1)));
+		for (List<Coordinate> list : listShip) {
+			if(!list.stream().anyMatch(coordinate -> !isCellNotInShotted(coordinate))) {
+				score+=coutShip;
+			}
+		}
+    	return score;
+    }
 }

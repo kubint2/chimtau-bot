@@ -4,6 +4,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class GameConfig {
+	public int thresholdShotConner = 1; // max 60
+	public int thresholdShotBorder = 10; // max 60
+	public int maxThresholdShot = 100;
+	public int maxShotNoCheckDD = 70;
+	
+	
 	public Boolean flagPlaceShipDDCAOnBorder = false;
     public Boolean flagPlaceShipOROnBorder = false;
     private Boolean flagCanHaveNeighbour = false;
@@ -11,6 +17,37 @@ public class GameConfig {
 	private int timeOut = 1000;
 	private boolean modeEasy = false;
 	
+	public int getMaxShotNoCheckDD() {
+		return maxShotNoCheckDD;
+	}
+
+	public void setMaxShotNoCheckDD(int maxShotNoCheckDD) {
+		this.maxShotNoCheckDD = maxShotNoCheckDD;
+	}
+
+	public int getThresholdShotConner() {
+		return thresholdShotConner;
+	}
+
+	public void setThresholdShotConner(int thresholdShotConner) {
+		this.thresholdShotConner = thresholdShotConner;
+	}
+
+	public int getThresholdShotBorder() {
+		return thresholdShotBorder;
+	}
+
+	public void setThresholdShotBorder(int thresholdShotBorder) {
+		this.thresholdShotBorder = thresholdShotBorder;
+	}
+
+	public int getMaxThresholdShot() {
+		return maxThresholdShot;
+	}
+
+	public void setMaxThresholdShot(int maxThresholdShot) {
+		this.maxThresholdShot = maxThresholdShot;
+	}
     public Boolean getFlagPlaceShipDDCAOnBorder() {
 		return flagPlaceShipDDCAOnBorder;
 	}
