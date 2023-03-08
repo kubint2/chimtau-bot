@@ -256,6 +256,10 @@ public class BotServiceController {
 						botPlayer.board[x][y]=2;
 
 						
+						if (CollectionUtils.isNotEmpty(botPlayer.priorityShotsList)
+								&& botPlayer.priorityShotsList.contains(coordinateObj)) {
+							botPlayer.priorityShotsList.clear();
+						}
 						botPlayer.enemyPlaceShipBoard[x][y] = 'X'; // for write log
 					} else {
 						botPlayer.board[x][y]=1;

@@ -129,15 +129,6 @@ public class BotPlayer {
 		
 		// main
 		List<Coordinate> showTurns = new ArrayList<>();
-		if (modeEasy) {
-			if (hitCoordinateList.size() == 0) {
-				showTurns.add(this.makeRandomShot());
-			} else {
-				showTurns = this.makeShotNeighbors(this.hitCoordinateList);
-			}
-			result.add(new int[] { showTurns.get(0).getX(), showTurns.get(0).getY() });
-			return result;
-		}
 		
 		 /* main */
 		showTurns = this.getshotsTurn();
@@ -385,6 +376,8 @@ public class BotPlayer {
             y = random.nextInt(boardHeight);
         } while (board[x][y] != 0) ;
 
+        // notify shotted
+		this.board[x][y] = 1;
         return new Coordinate(x, y);
     }
     
@@ -402,12 +395,14 @@ public class BotPlayer {
     		);
     
     public List<Coordinate> priorityShotsList = new ArrayList<>();
+    public boolean checkPriorityFlag = true;
     
 	public Coordinate makeSmartRandomShot() {
     	if (CollectionUtils.isNotEmpty(priorityShotsList)) {
     		Coordinate prioritycoordinate = priorityShotsList.get(0);
     		priorityShotsList.remove(prioritycoordinate);
     		if(isValidForShot(prioritycoordinate)) {
+				this.board[prioritycoordinate.getX()][prioritycoordinate.getY()] = 1;
         		return  prioritycoordinate;
     		}
     	}
