@@ -189,11 +189,11 @@ public class BotServiceController {
 			e.printStackTrace();
 			logger.error(e);
 		}
-//		if(botPlayer.modeEasy) {
-//			if(!botPlayer.enemyPlayId.contains("bot")) {
-//				throw new Exception("===================================TEST=============");
-//			}
-//		}
+		if(botPlayer.modeEasy) {
+			if(!botPlayer.enemyPlayId.contains("bot")) {
+				throw new Exception("===================================TEST=============");
+			}
+		}
 		System.out.println(sessionID + " Response: place-ships" + JsonUtil.objectToJson(response));
 		return new ResponseEntity<GameStartResult>(response, HttpStatus.OK);
 	}
@@ -425,10 +425,10 @@ public class BotServiceController {
 				GameUtil.writeLogInfoTofile(fileName, enemyInfo);
 
 				fileName = enemyInfo.getEnemyPlayId() + ".txt";
-				String title = java.time.LocalDateTime.now() +" ==== "+ botPlayer.enemyPlayId +" shot My Board (winer:" + botPlayer.winner +" -"+botPlayer.timeOut+") GameId: " +  sessionID;
+				String title = java.time.LocalDateTime.now() +" ==== "+ botPlayer.enemyPlayId +" shot My Board (winer:" + botPlayer.winner +" -"+botPlayer.enemyShotNo+") GameId: " +  sessionID;
 				GameUtil.writeBoardLog(title, enemyInfo.getMyPlaceShipBoard(), enemyInfo.getEnemyShotBoard(), botPlayer.boardWidth, botPlayer.boardHeight, fileName);
 				fileName = enemyInfo.getEnemyPlayId() + "_shot_chimtau" + ".txt";
-				title = java.time.LocalDateTime.now() + "==== chimtau shot "+ botPlayer.enemyPlayId +" Board (winer:" + botPlayer.winner +" -"+botPlayer.timeOut+") GameId: " +  sessionID;
+				title = java.time.LocalDateTime.now() + "==== chimtau shot "+ botPlayer.enemyPlayId +" Board (winer:" + botPlayer.winner +" -"+botPlayer.myShotNo+") GameId: " +  sessionID;
 				GameUtil.writeBoardLog(title, enemyInfo.getEnemyPlaceShipBoard(), enemyInfo.getMyShotBoard(), botPlayer.boardWidth, botPlayer.boardHeight, fileName);
 			
 				//

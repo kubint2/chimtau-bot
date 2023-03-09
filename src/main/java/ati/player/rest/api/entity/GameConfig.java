@@ -5,17 +5,17 @@ import java.util.List;
 
 public class GameConfig {
 	public int thresholdShotConner = 1; // max 60
-	public int thresholdShotBorder = 10; // max 60
+	public int thresholdShotBorder = 15; // max 60
 	public int maxThresholdShot = 100;
 	public int maxShotNoCheckDD = 70;
-	public int minScoreShotConnerThreshold = 0;
+	public int minScoreShotConnerThreshold = 1;
 
 	public int maxShipDDonCorner = 0;
-    public int maxShipORonCorner = 0;
+    public int maxShipORonCorner = 1;
 	
 	
 	
-	public Boolean flagPlaceShipDDCAOnBorder = false;
+	public Boolean flagPlaceShipDDCAOnBorder = true;
     public Boolean flagPlaceShipOROnBorder = false;
     private Boolean flagCanHaveNeighbour = false;
 	private Boolean flagPlaceVertical = null;

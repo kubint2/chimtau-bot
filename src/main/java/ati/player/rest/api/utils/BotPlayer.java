@@ -268,43 +268,48 @@ public class BotPlayer {
 					// Check valid coordinateFourth
 					if (isValidForShot(coordinateFourth)) {
 						neightBour3point.add(coordinateFourth);
-						return neightBour3point;
+						// return neightBour3point; // for bot detected return neightBour3point;
 					}
 				}
 				// EMPTY neightBour3point
 				Coordinate coordinateCV = findSquareCorner(hitCoordinateList);
-	        	int colX = coordinateCV.getX();
-	        	int rowY = coordinateCV.getY();
-				List<Coordinate> shipCvVetical = List.of (
-						new Coordinate(colX, rowY ),
-						new Coordinate(colX+1, rowY-1 ),
-						new Coordinate(colX+1, rowY ),
-						new Coordinate(colX+1, rowY+1 ),
-						new Coordinate(colX+1, rowY+2 )
-				);
-				List<Coordinate> shipCvHor = List.of (
-						new Coordinate(colX,  rowY ), // 1
-						new Coordinate(colX-1,rowY ), // 2
-						new Coordinate(colX+1,rowY ), // 3
-						new Coordinate(colX+2,rowY ), // 4
-						new Coordinate(colX,rowY-1 ) // 5
-				);
-				if(shipCvVetical.containsAll(this.hitCoordinateList)) {
-					// shipCvVetical.removeAll(this.hitCoordinateList);
-					// this.flagGetMaxShot = true;
-					for (Coordinate coordinate : shipCvVetical) {
-						if(!this.hitCoordinateList.contains(coordinate) && isValidForShot(coordinate)) {
-							neightBour3point.add(coordinate);
-						}
-					}
-				} else if (shipCvHor.containsAll(this.hitCoordinateList)) {
-					// this.flagGetMaxShot = true;
-					for (Coordinate coordinate : shipCvHor) {
-						if(!this.hitCoordinateList.contains(coordinate) && isValidForShot(coordinate)) {
-							neightBour3point.add(coordinate);
-						}
-					}
+				if(coordinateCV!= null) {
+					List<Coordinate> neighbourCoordinateCV = makeShotNeighbors(coordinateCV);
+					neightBour3point.addAll(neighbourCoordinateCV);
 				}
+
+//	        	int colX = coordinateCV.getX();
+//	        	int rowY = coordinateCV.getY();
+//				List<Coordinate> shipCvVetical = List.of (
+//						new Coordinate(colX, rowY ),
+//						new Coordinate(colX+1, rowY-1 ),
+//						new Coordinate(colX+1, rowY ),
+//						new Coordinate(colX+1, rowY+1 ),
+//						new Coordinate(colX+1, rowY+2 )
+//				);
+//				List<Coordinate> shipCvHor = List.of (
+//						new Coordinate(colX,  rowY ), // 1
+//						new Coordinate(colX-1,rowY ), // 2
+//						new Coordinate(colX+1,rowY ), // 3
+//						new Coordinate(colX+2,rowY ), // 4
+//						new Coordinate(colX,rowY-1 ) // 5
+//				);
+//				if(shipCvVetical.containsAll(this.hitCoordinateList)) {
+//					// shipCvVetical.removeAll(this.hitCoordinateList);
+//					// this.flagGetMaxShot = true;
+//					for (Coordinate coordinate : shipCvVetical) {
+//						if(!this.hitCoordinateList.contains(coordinate) && isValidForShot(coordinate)) {
+//							neightBour3point.add(coordinate);
+//						}
+//					}
+//				} else if (shipCvHor.containsAll(this.hitCoordinateList)) {
+//					// this.flagGetMaxShot = true;
+//					for (Coordinate coordinate : shipCvHor) {
+//						if(!this.hitCoordinateList.contains(coordinate) && isValidForShot(coordinate)) {
+//							neightBour3point.add(coordinate);
+//						}
+//					}
+//				}
 			}
 
 			if (CollectionUtils.isNotEmpty(neightBour3point)) {
@@ -653,7 +658,7 @@ public class BotPlayer {
 				obj = new Coordinate(objMax2.getX() - 1, objMax2.getY());
 				if (isValidForShot(obj)) {
 					neightBourTypeA.add(obj);
-					return neightBourTypeA; // return
+					// for bot detected return neightBourTypeA; // return
 				}
 				obj = new Coordinate(objMax2.getX() + 1, objMax2.getY());
 				if (isValidForShot(obj)) {
@@ -665,7 +670,7 @@ public class BotPlayer {
 				obj = new Coordinate(objMax2.getX(), objMax2.getY() - 1);
 				if (isValidForShot(obj)) {
 					neightBourTypeA.add(obj);
-					return neightBourTypeA; // return
+					// for bot detected return neightBourTypeA; // return
 				}
 				obj = new Coordinate(objMax2.getX(), objMax2.getY() + 1);
 				if (isValidForShot(obj)) {
@@ -861,19 +866,25 @@ public class BotPlayer {
 		listShip.add(List.of(new Coordinate(x, y - 1), new Coordinate(x, y)));
 		
 		if (CollectionUtils.isNotEmpty(this.hitCoordinateList)) {
-			ListIterator<List<Coordinate>> iter = listShip.listIterator();
-			while (iter.hasNext()) {
-				List<Coordinate> ship = iter.next();
-				boolean flagContainHitList = false;
-				if (ship.stream().anyMatch(coordinate -> this.hitCoordinateList.contains(coordinate))) {
-					flagContainHitList = true;
+			if (typeCheck == 5) {
+				ListIterator<List<Coordinate>> iter = listShip.listIterator();
+				while (iter.hasNext()) {
+					List<Coordinate> ship = iter.next();
+					if (!ship.stream().anyMatch(coordinate -> this.hitCoordinateList.contains(coordinate))) {
+						iter.remove(); // not have any match
+					}
 				}
-				if (!flagContainHitList) {
-					iter.remove();
+			} else {
+				ListIterator<List<Coordinate>> iter = listShip.listIterator();
+				while (iter.hasNext()) {
+					List<Coordinate> ship = iter.next();
+					if (!ship.containsAll(this.hitCoordinateList)) {
+						iter.remove(); // not contain all hitItem
+					}
 				}
 			}
 		}
-		
+
 		for (List<Coordinate> list : listShip) {
 			if(!list.stream().anyMatch(coordinate -> !isCellNotInShotted(coordinate))) {
 				score+=coutShip;
@@ -893,15 +904,21 @@ public class BotPlayer {
 		listShip.add(List.of(new Coordinate(x, y - 2), new Coordinate(x, y - 1), new Coordinate(x, y)));
 		
 		if (CollectionUtils.isNotEmpty(this.hitCoordinateList)) {
-			ListIterator<List<Coordinate>> iter = listShip.listIterator();
-			while (iter.hasNext()) {
-				List<Coordinate> ship = iter.next();
-				boolean flagContainHitList = false;
-				if (ship.stream().anyMatch(coordinate -> this.hitCoordinateList.contains(coordinate))) {
-					flagContainHitList = true;
+			if (typeCheck == 5) {
+				ListIterator<List<Coordinate>> iter = listShip.listIterator();
+				while (iter.hasNext()) {
+					List<Coordinate> ship = iter.next();
+					if (!ship.stream().anyMatch(coordinate -> this.hitCoordinateList.contains(coordinate))) {
+						iter.remove(); // not have any match
+					}
 				}
-				if (!flagContainHitList) {
-					iter.remove();
+			} else {
+				ListIterator<List<Coordinate>> iter = listShip.listIterator();
+				while (iter.hasNext()) {
+					List<Coordinate> ship = iter.next();
+					if (!ship.containsAll(this.hitCoordinateList)) {
+						iter.remove(); // not contain all hitItem
+					}
 				}
 			}
 		}
@@ -927,15 +944,21 @@ public class BotPlayer {
 		listShip.add(List.of(new Coordinate(x, y-3), new Coordinate(x, y-2), new Coordinate(x, y-1), new Coordinate(x, y)));
 		
 		if (CollectionUtils.isNotEmpty(this.hitCoordinateList)) {
-			ListIterator<List<Coordinate>> iter = listShip.listIterator();
-			while (iter.hasNext()) {
-				List<Coordinate> ship = iter.next();
-				boolean flagContainHitList = false;
-				if (ship.stream().anyMatch(coordinate -> this.hitCoordinateList.contains(coordinate))) {
-					flagContainHitList = true;
+			if (typeCheck == 5) {
+				ListIterator<List<Coordinate>> iter = listShip.listIterator();
+				while (iter.hasNext()) {
+					List<Coordinate> ship = iter.next();
+					if (!ship.stream().anyMatch(coordinate -> this.hitCoordinateList.contains(coordinate))) {
+						iter.remove(); // not have any match
+					}
 				}
-				if (!flagContainHitList) {
-					iter.remove();
+			} else {
+				ListIterator<List<Coordinate>> iter = listShip.listIterator();
+				while (iter.hasNext()) {
+					List<Coordinate> ship = iter.next();
+					if (!ship.containsAll(this.hitCoordinateList)) {
+						iter.remove(); // not contain all hitItem
+					}
 				}
 			}
 		}
@@ -961,15 +984,21 @@ public class BotPlayer {
 		listShip.add(List.of(new Coordinate(x, y-3), new Coordinate(x, y-2), new Coordinate(x, y-1), new Coordinate(x, y), new Coordinate(x-1, y-2)));
 		
 		if (CollectionUtils.isNotEmpty(this.hitCoordinateList)) {
-			ListIterator<List<Coordinate>> iter = listShip.listIterator();
-			while (iter.hasNext()) {
-				List<Coordinate> ship = iter.next();
-				boolean flagContainHitList = false;
-				if (ship.stream().anyMatch(coordinate -> this.hitCoordinateList.contains(coordinate))) {
-					flagContainHitList = true;
+			if (typeCheck == 5) {
+				ListIterator<List<Coordinate>> iter = listShip.listIterator();
+				while (iter.hasNext()) {
+					List<Coordinate> ship = iter.next();
+					if (!ship.stream().anyMatch(coordinate -> this.hitCoordinateList.contains(coordinate))) {
+						iter.remove(); // not have any match
+					}
 				}
-				if (!flagContainHitList) {
-					iter.remove();
+			} else {
+				ListIterator<List<Coordinate>> iter = listShip.listIterator();
+				while (iter.hasNext()) {
+					List<Coordinate> ship = iter.next();
+					if (!ship.containsAll(this.hitCoordinateList)) {
+						iter.remove(); // not contain all hitItem
+					}
 				}
 			}
 		}
@@ -991,15 +1020,21 @@ public class BotPlayer {
 		listShip.add(List.of(new Coordinate(x, y), new Coordinate(x+1, y), new Coordinate(x, y-1), new Coordinate(x-1, y-1)));
 		
 		if (CollectionUtils.isNotEmpty(this.hitCoordinateList)) {
-			ListIterator<List<Coordinate>> iter = listShip.listIterator();
-			while (iter.hasNext()) {
-				List<Coordinate> ship = iter.next();
-				boolean flagContainHitList = false;
-				if (ship.stream().anyMatch(coordinate -> this.hitCoordinateList.contains(coordinate))) {
-					flagContainHitList = true;
+			if (typeCheck == 5) {
+				ListIterator<List<Coordinate>> iter = listShip.listIterator();
+				while (iter.hasNext()) {
+					List<Coordinate> ship = iter.next();
+					if (!ship.stream().anyMatch(coordinate -> this.hitCoordinateList.contains(coordinate))) {
+						iter.remove(); // not have any match
+					}
 				}
-				if (!flagContainHitList) {
-					iter.remove();
+			} else {
+				ListIterator<List<Coordinate>> iter = listShip.listIterator();
+				while (iter.hasNext()) {
+					List<Coordinate> ship = iter.next();
+					if (!ship.containsAll(this.hitCoordinateList)) {
+						iter.remove(); // not contain all hitItem
+					}
 				}
 			}
 		}
