@@ -1,0 +1,99 @@
+{
+	"modeEasy": false,
+	"flagCanHaveNeighbour": false,
+	"ignorePlaceShip": [],
+	"priorityShotsList": [],
+	"shipConfigMap": {
+		"DD": {
+			"modeRandom": false,
+			"coordinates": [
+				{
+					"x": 0,
+					"y": 1
+				},
+				{
+					"x": 1,
+					"y": 3
+				}
+			],
+			"verticals": [true, true],
+			"maxShipOnBorder":1,
+			"maxShipOnCorner":0,
+			"vetical": null
+		},
+		"CA": {
+			"modeRandom": false,
+			"coordinates": [
+				{
+					"x": 8,
+					"y": 0
+				},
+				{
+					"x": 11,
+					"y": 5
+				}
+			],
+			"verticals": [true, false],
+			"maxShipOnBorder":1,
+			"maxShipOnCorner":0,
+			"vetical": null
+		},
+		"CV": {
+			"modeRandom": false,
+			"coordinates": [
+				{
+					"x": 6,
+					"y": 4
+				},
+				{
+					"x": 13,
+					"y": 2
+				}
+			],
+			"verticals": [true, false],
+			"maxShipOnBorder":0,
+			"maxShipOnCorner":0,
+			"vetical": null
+		},
+		"BB": {
+			"modeRandom": false,
+			"coordinates": [
+				{
+					"x": 11,
+					"y": 7
+				},
+				{
+					"x": 17,
+					"y": 1
+				}
+			],
+			"verticals": [false, true],
+			"maxShipOnBorder":0,
+			"maxShipOnCorner":0,
+			"vetical": null
+		},
+		"OR": {
+			"modeRandom": false,
+			"coordinates": [
+				{
+					"x": 18,
+					"y": 6
+				},
+				{
+					"x": 2,
+					"y": 5
+				}
+			],
+			"verticals": [true, true],
+			"maxShipOnBorder":0,
+			"maxShipOnCorner":0,
+			"vetical": null
+		}
+	},
+	"thresholdConfig": {
+		"thresholdShotCorner": 1,
+		"thresholdShotBorder": 15,
+		"maxThresholdShot": 100,
+		"maxShotNoCheckDD": 60
+	}
+}
