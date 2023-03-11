@@ -16,6 +16,7 @@ import org.apache.commons.collections.CollectionUtils;
 
 import ati.player.rest.api.entity.Coordinate;
 import ati.player.rest.api.entity.ShipData;
+import ati.player.rest.api.entity.ThresholdConfig;
 import ati.player.rest.api.request.ShipRequest;
 
 public class BotPlayer {
@@ -28,14 +29,13 @@ public class BotPlayer {
 	public String loser;
 	public int maxShots;
 	public List<ShipRequest> ships;
-//	public List<Coordinate> neighborCoordinateList;
-	
+
 	public String enemyPlayId;
 	public int[][] enemyShotNo2d;
 	public int enemyShotNo = 0;
 	public char[][] enemyPlaceShipBoard;
 	
-	public List<ShipData> enemyShipData = new ArrayList(); 
+	public List<ShipRequest> requestShipData = new ArrayList(); 
 	
 	public int[][] myShotNoArr2d;
 	public int myShotNo = 0;
@@ -44,7 +44,7 @@ public class BotPlayer {
 	public int timeOut = 2000;
 	public boolean modeEasy = false;
 
-	// private BotPlayer instance;
+	
 
 	public BotPlayer() {
 	}
@@ -82,6 +82,8 @@ public class BotPlayer {
 		
 		// init coordinates board
 		boardCoordinates = GameUtil.getCoordinatesBoard(width, height);
+		
+		requestShipData = ships;
 	}
 
     public void resetCalculator() {
@@ -314,12 +316,8 @@ public class BotPlayer {
 		this.board[x][y] = 1;
         return new Coordinate(x, y);
     }
-    
-    
-	public int thresholdShotCorner = 1; // max 60
-	public int thresholdShotBorder = 10; // max 60
-	public int maxThresholdShot = 100;
-	public int maxShotNoCheckDD = 60;
+
+	private ThresholdConfig thresholdConfig = new ThresholdConfig();
 
     private List<Coordinate> cornerCoordinates = new ArrayList<>();
 	private List<Coordinate> borderCoordinates = new ArrayList<>();
@@ -341,10 +339,11 @@ public class BotPlayer {
 
 		List<Coordinate> cordinates;
 		Random rand = new Random();
-		int thresholdCheck = rand.nextInt(maxThresholdShot); // random number
+		int thresholdCheck = rand.nextInt(thresholdConfig.getMaxThresholdShot()); // random number
 
 		if (shipEnemyMap.containsKey(Ship.SHIP_DD) || shipEnemyMap.containsKey(Ship.SHIP_CA)) {
-			if (thresholdCheck < thresholdShotCorner || this.myShotNo + 5 > maxShotNoCheckDD) {
+			if (thresholdCheck < thresholdConfig.getThresholdShotCorner()
+					|| this.myShotNo + 5 > thresholdConfig.getThresholdShotCorner()) {
 				// filter
 				cordinates = this.cornerCoordinates.stream().filter(cordinate -> isValidForShot(cordinate))
 						.collect(Collectors.toList());
@@ -365,7 +364,8 @@ public class BotPlayer {
 			}
 
 			// Check shot border
-			if (thresholdCheck < thresholdShotBorder || this.myShotNo > maxShotNoCheckDD) {
+			if (thresholdCheck < thresholdConfig.getThresholdShotBorder()
+					|| this.myShotNo >= thresholdConfig.getMaxShotNoCheckDD()) {
 				// filter
 				cordinates = this.borderCoordinates.stream().filter(cordinate -> isValidForShot(cordinate))
 						.collect(Collectors.toList());
@@ -380,6 +380,16 @@ public class BotPlayer {
 					if (maxScrore > 0) {
 						cordinates = cordinates.stream().filter(cordinate -> cordinate.getScore() == maxScrore)
 								.collect(Collectors.toList());
+						for (Coordinate coordinate : cordinates) {
+							coordinate.setScore(this.getScoreCoordinate(coordinate.getX(), coordinate.getY(),
+									this.shipEnemyMap, false));
+						}
+						// continue find maxScore
+						int maxScrore2 = cordinates.stream().max(Comparator.comparing(Coordinate::getScore))
+								.orElseThrow(NoSuchElementException::new).getScore();
+						// continue filter
+						cordinates = cordinates.stream().filter(cordinate -> cordinate.getScore() == maxScrore2)
+								.collect(Collectors.toList());
 						return cordinates.get(rand.nextInt(cordinates.size()));
 					}
 				}
@@ -387,7 +397,8 @@ public class BotPlayer {
 		}
 
 		// ELSE MAIN
-		cordinates = this.boardCoordinates.stream().filter(cordinate ->  isValidForShot(cordinate)).collect(Collectors.toList());
+		cordinates = this.boardCoordinates.stream().filter(cordinate -> isValidForShot(cordinate))
+				.collect(Collectors.toList());
 		if (CollectionUtils.isNotEmpty(cordinates)) {
 			for (Coordinate coordinate : cordinates) {
 				coordinate.setScore(this.getScoreCoordinate(coordinate.getX(), coordinate.getY(), this.shipEnemyMap, false));
@@ -895,4 +906,12 @@ public class BotPlayer {
 		}
     	return score;
     }
+
+	public ThresholdConfig getThresholdConfig() {
+		return thresholdConfig;
+	}
+
+	public void setThresholdConfig(ThresholdConfig thresholdConfig) {
+		this.thresholdConfig = thresholdConfig;
+	}
 }

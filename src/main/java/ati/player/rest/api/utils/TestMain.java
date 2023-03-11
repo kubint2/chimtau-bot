@@ -8,20 +8,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Random;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
-import ati.player.rest.api.controller.CalculateProbabilityTask;
 import ati.player.rest.api.entity.Coordinate;
 import ati.player.rest.api.entity.EnemyPlayInfo;
 import ati.player.rest.api.entity.GameConfig;
+import ati.player.rest.api.request.ShipRequest;
 
 public class TestMain {
 
@@ -50,7 +44,7 @@ public class TestMain {
 		System.out.println("max coordinate : " + JsonUtil.objectToJson(max));
 		
 	}
-	public static void main(String[] args) throws InterruptedException { 
+	public static void mainsxxx(String[] args) throws InterruptedException { 
 		List<Coordinate> cordinates = new ArrayList<>();
 		cordinates.add(new Coordinate(1, 0,1));
 		cordinates.add(new Coordinate(4, 2,4));
@@ -164,41 +158,7 @@ public class TestMain {
 		}
 		return null;
 	}
-	
-	
-	public static void main11(String[] args) throws InterruptedException {
-		
-		while (true) {
-			Board board = new Board(20, 8);
-			board.flagPlaceShipDDCAOnBorder = true;
-			board.flagPlaceShipOROnBorder = true;
-			board.addShip(new Ship("OR"));
-			board.maxShipORonCorner =0;
-			board.maxShipDDonCorner =0;
-			
-			board.addShip(new Ship("DD"));
-//			//board.addShip(new Ship("DD"));
-//			board.addShip(new Ship("CA"));
-//			//board.addShip(new Ship("CA"));
-//			board.addShip(new Ship("BB"));
-			// board.addShip(new Ship("BB"));
-			
-			// board.addShip(new Ship("OR"));
-			// board.addShip(new Ship("OR"));
 
-			 board.addShip(new Ship("CV"));
-			board.addShip(new Ship("CV"));
-			//board.flagPlaceVertical = true;
-			
-			board.flagCanHaveNeighbour = false;
-			board.placeShipsRandomly();
-			board.print();
-			
-			System.out.println();
-			Thread.sleep(800);
-		}
-	}
-	
     private int[][] grid ;
 	
     
@@ -207,119 +167,42 @@ public class TestMain {
     	 System.out.println(java.time.LocalDateTime.now());    
     }
 	
-	public static void mainxx(String[] args) throws InterruptedException {
-		List<Coordinate> coordinatesShotted = new ArrayList<>();
-		
-		int count = 1;
-		
-		int [][] boardEnemy = new int[20][8] ;
-		
+	public static void main(String[] args) throws InterruptedException {
 		int tryCount = 8000;
 		int heigh = 8;
 		int width = 20;
-		
-		while (tryCount-- > 0) {
-			Board board = new Board(width, heigh, coordinatesShotted);
-			board.addShip(new Ship("CV"));
-			board.addShip(new Ship("CV"));
-//			board.addShip(new Ship("DD"));
-//			board.addShip(new Ship("CA"));
-//			board.addShip(new Ship("CA"));
-//			board.addShip(new Ship("BB"));
-//			board.addShip(new Ship("BB"));
-//			
-//			board.addShip(new Ship("OR"));
-//			board.addShip(new Ship("OR"));
-//			
-//			board.addShip(new Ship("CV"));
-//			board.addShip(new Ship("CV"));
-			board.flagPlaceVertical = true;
-			// board.flagCanHaveNeighbour = false;
-//			board.flagPlaceShipDDCAOnBorder = true;
-//			board.flagPlaceShipOROnBorder = true;
-			board.placeShipsRandomly();
-			board.print();
-			
-			System.out.println(" =======  COUNT :" + count++);
 
-			coordinatesShotted = board.getListDot();
+		// input
+		List<ShipRequest> shipRequestData = new ArrayList<>();
+		shipRequestData.add(new ShipRequest("DD",2));
+		shipRequestData.add(new ShipRequest("CA",2));
+		shipRequestData.add(new ShipRequest("OR",2));
+		shipRequestData.add(new ShipRequest("BB",2));
+		shipRequestData.add(new ShipRequest("CV",2));
+
+
+		while (tryCount-- > 0) {
+			GameConfig gameconf = GameUtil.readConfiguration("default");
+			Board board = new Board(width, heigh, new ArrayList<>(), gameconf.getShipConfigMap());
 			
+			board.flagCanHaveNeighbour = gameconf.getFlagCanHaveNeighbour();
 			
-			int x;
-			int y;
-			for (Ship ship : board.getShips()) {
-				for (Coordinate coor : ship.coordinates) {
-					boardEnemy[coor.getX()][coor.getY()]+=1;
+			for (ShipRequest shipReq : shipRequestData) {
+				int quantity = shipReq.getQuantity();
+				while(quantity > 0) {
+					board.addShip(new Ship(shipReq.getType()));
+					quantity--;
 				}
 			}
-
-			System.out.println();
-			//Thread.sleep(300);
+			// set priority
+			board.placeShipsRandomly();
+			System.out.println(" ================== " + tryCount);
+			board.print();
+			Thread.sleep(2000);
 		}
-		
-		
-		List<Coordinate> coordinates = new ArrayList<>();
-        for (int y = 0; y < heigh; y++) {
-            for (int x = 0; x < width; x++) {
-            	coordinates.add(new Coordinate(x, y, boardEnemy[x][y]));
-                System.out.print(boardEnemy[x][y] + "  ");
-            }
-            System.out.println();
-        }
-        
-		Coordinate maxScore = coordinates.stream().max(Comparator.comparing(Coordinate::getScore))
-				.orElseThrow(NoSuchElementException::new);
-        
-		 System.out.println("MaxScore: " + JsonUtil.objectToJson(maxScore));
-        
-	}
-	
-	
-	public static void main9(String[] args) throws InterruptedException {
-		ScheduledExecutorService executor = Executors.newScheduledThreadPool(2);
-		 Map<String, Integer> shipEnemyMap = new HashMap<>();
-		 shipEnemyMap.put(Ship.SHIP_BB, 2);
-		 shipEnemyMap.put(Ship.SHIP_CA, 2);
-		 shipEnemyMap.put(Ship.SHIP_DD, 2);
-		 shipEnemyMap.put(Ship.SHIP_CV, 2);
-		 shipEnemyMap.put(Ship.SHIP_OR, 2);
-		
-		CalculateProbabilityTask task = new CalculateProbabilityTask(20,8,500, new ArrayList<>(), new ArrayList<>() ,shipEnemyMap);
-		
-//		Future<?> future = executor.submit(task);
-//		Runnable cancelTask = () -> future.cancel(true);
-//		executor.schedule(cancelTask, 5000, TimeUnit.MILLISECONDS);
-//		executor.shutdown();
-//		Thread.sleep(5000);
-		
-		int [][] boardEnemy = task.boardEnemy;
-		List<Coordinate> coordinates = new ArrayList<>();
-        for (int y = 0; y < 8; y++) {
-            for (int x = 0; x < 20; x++) {
-            	coordinates.add(new Coordinate(x, y, boardEnemy[x][y]));
-                System.out.print(boardEnemy[x][y] + "  ");
-            }
-            System.out.println();
-        }
-        
 
-		Coordinate maxScore = coordinates.stream().max(Comparator.comparing(Coordinate::getScore))
-				.orElseThrow(NoSuchElementException::new);
-        
-		 System.out.println("MaxScore: " + JsonUtil.objectToJson(maxScore));
-		 System.out.println("Count" + task.count);
-		 
-		 
-	     coordinates.sort((o1, o2) -> o2.getScore() - o1.getScore());
-		 System.out.println("MaxScore In array (0): " + JsonUtil.objectToJson(coordinates.get(0)));
-		 coordinates.remove(new Coordinate(maxScore.getX(), maxScore.getY()));
-		 System.out.println("MaxScore In array (1): " + JsonUtil.objectToJson(coordinates.get(0)));
-		 
-		 
-		 
 	}
 
-	
 	public static void main2(String[] args) {
 		List<Coordinate> hitList = new ArrayList<>();
 		hitList.add(new Coordinate(1, 1));

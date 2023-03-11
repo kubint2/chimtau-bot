@@ -16,6 +16,7 @@ public class Ship {
 	
 	private char type;
     private int length;
+    private int priorityOrder;
     private boolean isVertical;
     private int row;
     private int col;
@@ -60,6 +61,7 @@ public class Ship {
 			break;
 		default:
 		}
+		this.priorityOrder = this.length;
 	}
     
     
@@ -103,4 +105,12 @@ public class Ship {
 //	public void setShipData(ShipData shipData) {
 //		this.shipData = shipData;
 //	}
+
+	public int getPriorityOrder() {
+		return priorityOrder;
+	}
+
+	public void setPriorityOrder(int priorityOrder) {
+		this.priorityOrder = priorityOrder;
+	}
 }

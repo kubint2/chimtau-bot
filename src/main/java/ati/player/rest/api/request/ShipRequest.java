@@ -4,6 +4,11 @@ public class ShipRequest {
     private String type;
     private int quantity;
     
+    public ShipRequest(String type, int quantity) {
+    	this.type = type;
+    	this.quantity = quantity;
+    }
+    
     public String getType() {
         return type;
     }

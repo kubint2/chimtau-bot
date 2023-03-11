@@ -107,7 +107,7 @@ public class BotServiceController {
 			} else {
 				botPlayer.enemyPlayId = botPlayer.player2;
 			}
-			// for readConfig
+			// Read file default.json
 			GameConfig gameConfig = GameUtil.readConfiguration(botPlayer.enemyPlayId) ;
 			if(gameConfig== null) gameConfig = new GameConfig();
 
@@ -118,13 +118,9 @@ public class BotServiceController {
 				}
 			}
 
-			if(gameConfig.getTimeOut() > 400 && gameConfig.getTimeOut() < 3000) {
-				botPlayer.timeOut = gameConfig.getTimeOut();
-			}
-
-			botPlayer.modeEasy = gameConfig.getModeEasy();
+			botPlayer.modeEasy = gameConfig.isModeEasy();
 			// set response
-			Board board = new Board(botPlayer.boardWidth, botPlayer.boardHeight, coordinatesShotted);
+			Board board = new Board(botPlayer.boardWidth, botPlayer.boardHeight, coordinatesShotted, gameConfig.getShipConfigMap());
 			for (ShipRequest shipReq : botPlayer.ships) {
 				int quantity = shipReq.getQuantity();
 				while(quantity > 0) {
@@ -132,13 +128,9 @@ public class BotServiceController {
 					quantity--;
 				}
 			}
-
-			board.flagPlaceVertical = gameConfig.getFlagPlaceVertical();
+			// other
 			board.flagCanHaveNeighbour = gameConfig.getFlagCanHaveNeighbour();
-			board.flagPlaceShipDDCAOnBorder = gameConfig.getFlagPlaceShipDDCAOnBorder();
-			board.flagPlaceShipOROnBorder = gameConfig.getFlagPlaceShipOROnBorder();
-			board.maxShipDDonCorner=gameConfig.getMaxShipDDonCorner();
-			board.maxShipORonCorner=gameConfig.getMaxShipORonCorner();
+			board.flagCanHaveNeighbour = gameConfig.getFlagCanHaveNeighbour();
 			
 			board.placeShipsRandomly();
 			board.print();
@@ -153,14 +145,7 @@ public class BotServiceController {
 
 			response.setShips(shipDatas);
 
-			// for random shot
-			botPlayer.thresholdShotBorder = gameConfig.thresholdShotBorder;
-			botPlayer.thresholdShotCorner = gameConfig.thresholdShotCorner;
-			botPlayer.maxThresholdShot = gameConfig.maxThresholdShot;
-			botPlayer.maxShotNoCheckDD = gameConfig.maxShotNoCheckDD;
-			botPlayer.minScoreShotCornerThreshold = gameConfig.minScoreShotConnerThreshold;
-			
-			
+			// for Shot
 			List<Coordinate> priorityCoordinates = new ArrayList<>();
 			if(CollectionUtils.isNotEmpty(gameConfig.getPriorityShotsList())) {
 				for (int[] coordinateArr : gameConfig.getPriorityShotsList()) {
@@ -168,7 +153,8 @@ public class BotServiceController {
 				}
 				botPlayer.priorityShotsList = priorityCoordinates;
 			}
-			
+			botPlayer.setThresholdConfig(gameConfig.getThresholdConfig());
+
 			// for write log
 			botPlayer.enemyShotNo2d = new int[botPlayer.boardWidth][botPlayer.boardHeight];
 			botPlayer.myShotNoArr2d = new int[botPlayer.boardWidth][botPlayer.boardHeight];
@@ -346,7 +332,7 @@ public class BotServiceController {
 						botPlayer.resetCalculator();
 						
 						// for write log
-						botPlayer.enemyShipData.add(shipData);
+						//botPlayer.enemyShipData.add(shipData);
 						char typeChar = 'o';
 						switch (shipData.getType()) {
 						case Ship.SHIP_DD:
@@ -419,18 +405,23 @@ public class BotServiceController {
 				
 				enemyInfo.setEnemyPlaceShipBoard(botPlayer.enemyPlaceShipBoard);
 				enemyInfo.setMyShotBoard(botPlayer.myShotNoArr2d);
-				enemyInfo.setEnemyShipData(botPlayer.enemyShipData);
+				// enemyInfo.setEnemyShipData(botPlayer.requestShipData);
 
-				String fileName = enemyInfo.getEnemyPlayId() + "_" + sessionID + ".log";
-				GameUtil.writeLogInfoTofile(fileName, enemyInfo);
+				String fileName ;
+//				fileName = enemyInfo.getEnemyPlayId() + "_" + sessionID + ".log";
+//				GameUtil.writeLogInfoTofile(fileName, enemyInfo);
 
 				fileName = enemyInfo.getEnemyPlayId() + ".txt";
 				String title = java.time.LocalDateTime.now() +" ==== "+ botPlayer.enemyPlayId +" shot My Board (winer:" + botPlayer.winner +" -"+botPlayer.enemyShotNo+") GameId: " +  sessionID;
+				title+="\n ShipMap: " + JsonUtil.objectToJson(botPlayer.requestShipData);
 				GameUtil.writeBoardLog(title, enemyInfo.getMyPlaceShipBoard(), enemyInfo.getEnemyShotBoard(), botPlayer.boardWidth, botPlayer.boardHeight, fileName);
-				fileName = enemyInfo.getEnemyPlayId() + "_shot_chimtau" + ".txt";
+				
+				fileName = "chimtau_shot_" + enemyInfo.getEnemyPlayId() +  ".txt";
 				title = java.time.LocalDateTime.now() + "==== chimtau shot "+ botPlayer.enemyPlayId +" Board (winer:" + botPlayer.winner +" -"+botPlayer.myShotNo+") GameId: " +  sessionID;
+				title+="\n ShipMap: " + JsonUtil.objectToJson(botPlayer.requestShipData);
+				
 				GameUtil.writeBoardLog(title, enemyInfo.getEnemyPlaceShipBoard(), enemyInfo.getMyShotBoard(), botPlayer.boardWidth, botPlayer.boardHeight, fileName);
-			
+				
 				//
 				botPlayerMap.remove(sessionID);
 			}
