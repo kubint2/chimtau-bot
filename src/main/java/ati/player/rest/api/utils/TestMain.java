@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Random;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
@@ -28,7 +29,38 @@ public class TestMain {
 	private static int height =8;
 	private static int width  =20;
 	
-	
+	public static void main111(String[] args) {
+		List<Coordinate> listCoor = new ArrayList<>();
+		listCoor.add(new Coordinate(1, 0,1));
+		listCoor.add(new Coordinate(4, 2,4));
+		listCoor.add(new Coordinate(3, 0,4));
+		listCoor.add(new Coordinate(2, 0,4));
+		listCoor.add(new Coordinate(5, 0,4));
+
+		System.out.println("before sort");
+		System.out.println(JsonUtil.objectToJson(listCoor));
+		
+		System.out.println("after sort");
+		listCoor.sort((o1, o2) -> o2.getScore() - o1.getScore());
+		System.out.println(JsonUtil.objectToJson(listCoor));
+		
+		System.out.println("max coordinate");
+		Coordinate max =  listCoor.stream().max(Comparator.comparing(Coordinate::getScore))
+				.orElseThrow(NoSuchElementException::new);
+		System.out.println("max coordinate : " + JsonUtil.objectToJson(max));
+		
+	}
+	public static void main(String[] args) throws InterruptedException { 
+		List<Coordinate> cordinates = new ArrayList<>();
+		cordinates.add(new Coordinate(1, 0,1));
+		cordinates.add(new Coordinate(4, 2,4));
+		cordinates.add(new Coordinate(4, 2,4));
+		Random rand = new Random();
+		while (true) {
+			System.out.println("max coordinate : " + rand.nextInt(cordinates.size()));
+		Thread.sleep(1000);
+		}
+	}
 	
 	
 	public static void main1(String[] args) throws Exception {
@@ -134,7 +166,7 @@ public class TestMain {
 	}
 	
 	
-	public static void main(String[] args) throws InterruptedException {
+	public static void main11(String[] args) throws InterruptedException {
 		
 		while (true) {
 			Board board = new Board(20, 8);
@@ -286,15 +318,7 @@ public class TestMain {
 		 
 		 
 	}
-	
-	public static void main5(String[] args) {
-		List<Coordinate> listCoor = List.of (
-				new Coordinate(0, 0),
-				new Coordinate(1, 0)
-				) ;
-		System.out.println(JsonUtil.objectToJson(listCoor));
-		
-	}
+
 	
 	public static void main2(String[] args) {
 		List<Coordinate> hitList = new ArrayList<>();

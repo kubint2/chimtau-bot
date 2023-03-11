@@ -155,10 +155,10 @@ public class BotServiceController {
 
 			// for random shot
 			botPlayer.thresholdShotBorder = gameConfig.thresholdShotBorder;
-			botPlayer.thresholdShotConner = gameConfig.thresholdShotConner;
+			botPlayer.thresholdShotCorner = gameConfig.thresholdShotCorner;
 			botPlayer.maxThresholdShot = gameConfig.maxThresholdShot;
 			botPlayer.maxShotNoCheckDD = gameConfig.maxShotNoCheckDD;
-			botPlayer.minScoreShotConnerThreshold = gameConfig.minScoreShotConnerThreshold;
+			botPlayer.minScoreShotCornerThreshold = gameConfig.minScoreShotConnerThreshold;
 			
 			
 			List<Coordinate> priorityCoordinates = new ArrayList<>();

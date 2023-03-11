@@ -27,8 +27,7 @@ public class Board {
     private static final int MIN_TRY_COUNT = 40;
  
     List<Coordinate> coordinatesShotted = new ArrayList<>();
-    
-    List<Coordinate> coordinatesPutted = new ArrayList<>();
+
 
     public Board(int width, int height) {
         this.width = width;

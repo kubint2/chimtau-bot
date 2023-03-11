@@ -4,11 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class GameConfig {
-	public int thresholdShotConner = 1; // max 60
+	public int thresholdShotCorner = 1; // max 60
 	public int thresholdShotBorder = 15; // max 60
 	public int maxThresholdShot = 100;
-	public int maxShotNoCheckDD = 70;
-	public int minScoreShotConnerThreshold = 1;
+	public int maxShotNoCheckDD = 60;
 
 	public int maxShipDDonCorner = 0;
     public int maxShipORonCorner = 1;
@@ -22,13 +21,6 @@ public class GameConfig {
 	private int timeOut = 1000;
 	private boolean modeEasy = false;
 	
-	public int getMinScoreShotConnerThreshold() {
-		return minScoreShotConnerThreshold;
-	}
-
-	public void setMinScoreShotConnerThreshold(int minScoreShotConnerThreshold) {
-		this.minScoreShotConnerThreshold = minScoreShotConnerThreshold;
-	}
 	public int getMaxShotNoCheckDD() {
 		return maxShotNoCheckDD;
 	}
@@ -38,11 +30,11 @@ public class GameConfig {
 	}
 
 	public int getThresholdShotConner() {
-		return thresholdShotConner;
+		return thresholdShotCorner;
 	}
 
 	public void setThresholdShotConner(int thresholdShotConner) {
-		this.thresholdShotConner = thresholdShotConner;
+		this.thresholdShotCorner = thresholdShotConner;
 	}
 
 	public int getThresholdShotBorder() {

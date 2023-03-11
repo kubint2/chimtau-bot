@@ -90,6 +90,40 @@ public class GameUtil {
     	readConfiguration("baothu");
     }
     
+    public static List<Coordinate> getCoordinatesBorder(int width, int heigh) {
+		List<Coordinate> coordinates = new ArrayList<>();
+
+		for (int x = 0; x < width; x++) {
+		    for (int y = 0; y < heigh; y++) {
+		        if (x == 0 || x == (width-1) || y == 0 || y == (heigh-1)) {
+		            Coordinate coord = new Coordinate(x, y);
+		            coordinates.add(coord);
+		        }
+		    }
+		}
+
+		return coordinates;
+    }
+    
+	public static List<Coordinate> getCoordinatesConner(int width, int heigh) {
+		List<Coordinate> coordinates = new ArrayList<>();
+		coordinates.add(new Coordinate(0, 0));
+		coordinates.add(new Coordinate(width - 1, 0));
+		coordinates.add(new Coordinate(width - 1, heigh - 1));
+		coordinates.add(new Coordinate(0, heigh - 1));
+		return coordinates;
+	}
+	
+	public static List<Coordinate> getCoordinatesBoard(int width, int heigh) {
+		List<Coordinate> coordinates = new ArrayList<>();
+		for (int y = 0; y < heigh; y++) {
+			for (int x = 0; x < width; x++) {
+				coordinates.add(new Coordinate(x, y));
+			}
+		}
+		return coordinates;
+	}
+    
 //  public static EnemyPlayInfo readEnemyPlayInfoFile(String FilePath) throws Exception {
 //		String enemyPlayId = "enemyPlayId";
 //
