@@ -27,7 +27,7 @@ public class ThresholdConfig {
 	}
 
 	///////////////////////////////////////////////////////////////////////////
-	private int thresholdShotCorner = 4; // max 60
+	private int thresholdShotCorner = 5; // max 60
 	private int thresholdShotBorder = 20; // max 60
 	private int maxThresholdShot = 100;
 	private int maxShotNoCheckDD = 55;

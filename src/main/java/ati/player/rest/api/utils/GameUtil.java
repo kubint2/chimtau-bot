@@ -19,9 +19,9 @@ import ati.player.rest.api.entity.ThresholdConfig;
 
 public class GameUtil {
 
-	// private static final String PATH = "//home//binhlv//Desktop//Hackathon//enemy_info//";
+	private static final String PATH = "//home//binhlv//Desktop//Hackathon//enemy_info//";
 	
-	private static final String PATH = "C:\\Users\\vanbinhluong92\\Desktop\\Hackathon\\enemy_info\\";
+	// private static final String PATH = "C:\\Users\\vanbinhluong92\\Desktop\\Hackathon\\enemy_info\\";
 	
     public static List<Coordinate> getCoordinateNeighbours(Coordinate coordinate, int boardWidth, int boardHeight) {
         List<Coordinate> neighborCells = new ArrayList<>();

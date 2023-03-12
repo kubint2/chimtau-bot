@@ -15,7 +15,6 @@ import java.util.stream.Collectors;
 import org.apache.commons.collections.CollectionUtils;
 
 import ati.player.rest.api.entity.Coordinate;
-import ati.player.rest.api.entity.ShipData;
 import ati.player.rest.api.entity.ThresholdConfig;
 import ati.player.rest.api.request.ShipRequest;
 
@@ -143,6 +142,8 @@ public class BotPlayer {
 					result.add(new int[] { randomShot.getX(), randomShot.getY() });
 				}
 			}
+			
+			System.out.println("typeCheck: " + typeCheck  + " maxScore: " + JsonUtil.objectToJson(showTurns) );
 			return result;
 		}
 		
@@ -158,6 +159,7 @@ public class BotPlayer {
 
 			if (maxScore != null) {
 				result.add(new int[] { maxScore.getX(), maxScore.getY() });
+				System.out.println("typeCheck: " + typeCheck  + " maxScore: " + JsonUtil.objectToJson(maxScore) );
 				return result;
 			}
 
@@ -169,6 +171,8 @@ public class BotPlayer {
 		// other else
 		Coordinate randomShot = makeSmartRandomShot();
 		result.add(new int[] { randomShot.getX(), randomShot.getY() });
+		
+		System.out.println("typeCheck: " + typeCheck  + " randomShot: " + JsonUtil.objectToJson(randomShot) );
 		return result;
 	}
 
@@ -341,9 +345,10 @@ public class BotPlayer {
 		Random rand = new Random();
 		int thresholdCheck = rand.nextInt(thresholdConfig.getMaxThresholdShot()); // random number
 
-		if (shipEnemyMap.containsKey(Ship.SHIP_DD) || shipEnemyMap.containsKey(Ship.SHIP_CA)) {
-			if (thresholdCheck < thresholdConfig.getThresholdShotCorner()
-					|| this.myShotNo + 5 > thresholdConfig.getThresholdShotCorner()) {
+		if (this.myShotNo >= thresholdConfig.getMaxShotNoCheckDD() && shipRemainCount < 3
+				&& (shipEnemyMap.containsKey(Ship.SHIP_DD) || shipEnemyMap.containsKey(Ship.SHIP_CA))) {
+			if (thresholdCheck < thresholdConfig.getThresholdShotCorner()) {
+					// || this.myShotNo + 5 > thresholdConfig.getMaxShotNoCheckDD()) {
 				// filter
 				cordinates = this.cornerCoordinates.stream().filter(cordinate -> isValidForShot(cordinate))
 						.collect(Collectors.toList());
@@ -364,8 +369,8 @@ public class BotPlayer {
 			}
 
 			// Check shot border
-			if (thresholdCheck < thresholdConfig.getThresholdShotBorder()
-					|| this.myShotNo >= thresholdConfig.getMaxShotNoCheckDD()) {
+			if (thresholdCheck < thresholdConfig.getThresholdShotBorder()) {
+					// || this.myShotNo >= thresholdConfig.getMaxShotNoCheckDD()) {
 				// filter
 				cordinates = this.borderCoordinates.stream().filter(cordinate -> isValidForShot(cordinate))
 						.collect(Collectors.toList());
@@ -719,7 +724,7 @@ public class BotPlayer {
 			if (shot.getX() >= boardWidth || shot.getY() >= boardHeight || shot.getX() < 0 || shot.getY() < 0) {
 				return false;
 			}
-			if (!this.coordinatesShotted.contains(shot)) {
+			if (!this.coordinatesShotted.contains(shot) && this.board[shot.getX()][shot.getY()] != 1) {
 				return true;
 			} else {
 				return false;
@@ -890,11 +895,11 @@ public class BotPlayer {
     private int getScoreShipOR(int x, int y, int quantity) {
 		int score = 0;
 		List<List<Coordinate>> listShip = new ArrayList<>();
-		listShip.add(List.of(new Coordinate(x, y), new Coordinate(x, y+1), new Coordinate(x+1, y+1), new Coordinate(x+1, y+1)));
-		listShip.add(List.of(new Coordinate(x, y), new Coordinate(x-1, y), new Coordinate(x, y+1), new Coordinate(x-1, y-1)));
-		listShip.add(List.of(new Coordinate(x, y), new Coordinate(x-1, y), new Coordinate(x-1, y-1), new Coordinate(x, y-1)));
-		listShip.add(List.of(new Coordinate(x, y), new Coordinate(x+1, y), new Coordinate(x, y-1), new Coordinate(x-1, y-1)));
-		
+		listShip.add(List.of(new Coordinate(x, y), new Coordinate(x, y+1), new Coordinate(x+1, y+1), new Coordinate(x+1, y)));
+		listShip.add(List.of(new Coordinate(x, y), new Coordinate(x-1, y), new Coordinate(x-1, y+1), new Coordinate(x, y+1)));
+		listShip.add(List.of(new Coordinate(x, y), new Coordinate(x, y-1), new Coordinate(x-1, y-1), new Coordinate(x-1, y)));
+		listShip.add(List.of(new Coordinate(x, y), new Coordinate(x+1, y), new Coordinate(x+1, y-1), new Coordinate(x, y-1)));
+
 		if (CollectionUtils.isNotEmpty(this.hitCoordinateList)) {
 			this.customizeListShip(listShip);
 		}
